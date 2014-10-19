@@ -1,3 +1,4 @@
+{-# OPTIONS --without-K #-}
 module Type.Param.Unary where
 
 open import Level

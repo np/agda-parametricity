@@ -1,3 +1,4 @@
+{-# OPTIONS --without-K #-}
 open import Level renaming (zero to ₀; suc to ₛ)
 
 module Type.Param.Binary where

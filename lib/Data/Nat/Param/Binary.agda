@@ -1,3 +1,4 @@
+{-# OPTIONS --with-K #-}
 module Data.Nat.Param.Binary where
 
 open import Level using () renaming (zero to ₀)

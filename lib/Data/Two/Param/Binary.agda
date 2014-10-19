@@ -1,3 +1,4 @@
+{-# OPTIONS --without-K #-}
 open import Type.Param.Binary
 open import Function.Param.Binary
 

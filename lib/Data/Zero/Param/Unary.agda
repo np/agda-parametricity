@@ -1,10 +1,11 @@
-module Data.Zero.Param.Unary where
-
+{-# OPTIONS --without-K #-}
 open import Data.Empty renaming (⊥ to 𝟘)
 open import Relation.Nullary
 
 open import Type.Param.Unary
 open import Function.Param.Unary
+
+module Data.Zero.Param.Unary where
 
 data [𝟘] (x : 𝟘) : Set₀ where
 

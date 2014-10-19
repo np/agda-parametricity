@@ -1,3 +1,4 @@
+{-# OPTIONS --without-K #-}
 module Data.One.Param.Unary where
 
 open import Data.Unit renaming (⊤ to 𝟙; tt to 0₁)

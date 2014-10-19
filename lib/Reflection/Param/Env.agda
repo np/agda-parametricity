@@ -1,3 +1,4 @@
+{-# OPTIONS --without-K #-}
 module Reflection.Param.Env where
 
 open import Data.Nat using (ℕ; zero; suc; _+_; _∸_)

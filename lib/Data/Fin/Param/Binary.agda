@@ -1,4 +1,4 @@
--- NOTE with-K
+{-# OPTIONS --with-K #-}
 module Data.Fin.Param.Binary where
 
 open import Data.Fin

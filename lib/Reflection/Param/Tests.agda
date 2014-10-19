@@ -1,3 +1,4 @@
+{-# OPTIONS --without-K #-}
 open import Level hiding (zero; suc)
 open import Data.Unit renaming (⊤ to 𝟙; tt to 0₁)
 open import Data.Bool

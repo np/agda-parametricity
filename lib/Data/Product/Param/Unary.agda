@@ -1,3 +1,4 @@
+{-# OPTIONS --without-K #-}
 module Data.Product.Param.Unary where
 
 open import Level
