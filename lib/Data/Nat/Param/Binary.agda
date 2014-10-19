@@ -7,10 +7,16 @@ open import Relation.Nullary
 open import Relation.Binary
 open import Function.Param.Binary
 open import Type.Param.Binary
+open import Reflection.Param.Env
 
 data ⟦ℕ⟧ : ⟦Set₀⟧ ℕ ℕ where
   ⟦zero⟧ : ⟦ℕ⟧ zero zero
   ⟦suc⟧  : ∀ {n₁ n₂} (nᵣ : ⟦ℕ⟧ n₁ n₂) → ⟦ℕ⟧ (suc n₁) (suc n₂)
+
+⟦ℕ⟧-env = extDefEnv [ quote ℕ ≔ quote ⟦ℕ⟧ ]
+         (extConEnv ([ quote zero ≔ quote ⟦zero⟧ ] ∘
+                     [ quote suc  ≔ quote ⟦suc⟧  ])
+         (ε 2))
 
 _⟦+⟧_ : (⟦ℕ⟧ ⟦→⟧ ⟦ℕ⟧ ⟦→⟧ ⟦ℕ⟧) _+_ _+_
 ⟦zero⟧  ⟦+⟧ n = n

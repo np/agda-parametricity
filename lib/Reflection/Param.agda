@@ -6,21 +6,22 @@ open import Data.Vec using (Vec; []; _∷_; replicate; tabulate; allFin; reverse
 open import Data.List using (List; []; _∷_; _++_)
 open import Data.String  using (String) renaming (_++_ to _++ˢ_)
 open import Reflection.NP
-open import Relation.Nullary.NP
+open import Relation.Nullary
 open import Relation.Binary.PropositionalEquality using (_≡_; refl)
 
 open import Data.Nat.Param.Binary
+open import Reflection.Param.Env
 
 module Reflection.Param where
 
--- Local opaque function to avoid depending on nplib
-module _ {a} {A : Set a} where
+-- Local "imports" to avoid depending on nplib
+private
   postulate
-    opaque : String → A → A
-    opaque-rule : ∀ {s} x → opaque s x ≡ x
+    opaque : ∀ {a b} {A : Set a} {B : Set b} → A → B → B
+    -- opaque-rule : ∀ {x} y → opaque x y ≡ y
 
-Endo : Set → Set
-Endo A = A → A
+  Endo : Set → Set
+  Endo A = A → A
 
 infix 0 `_
 
@@ -34,66 +35,6 @@ app-tabulate {suc n} f xs = f zero ∷ app-tabulate (f ∘ suc) xs
 allVarsFrom : ∀ n → ℕ → Vec Term n
 allVarsFrom zero    k = []
 allVarsFrom (suc n) k = var (k + n) [] ∷ allVarsFrom n k
-
-record Env (n : ℕ)(A B : Set) : Set where
-  field
-    pVarᵢ : Fin n → A → B
-    pVarᵣ : A → B
-    pCon : Name → Name
-    pDef : Name → Name
-open Env
-
-Env' = λ n → Env n ℕ ℕ
-
-ε-pVarᵢ : ∀ {n} → String → Fin n → ℕ → ℕ
-ε-pVarᵢ = λ s i → opaque (s ++ˢ ".pVarᵢ " ++ˢ showNat (Fin▹ℕ i))
-
-ε : ∀ n → Env' n
-ε n = record { pVarᵢ = ε-pVarᵢ "ε"
-             ; pVarᵣ = opaque "ε.pVarᵣ"
-             ; pCon = opaque "ε.pCon"
-             ; pDef = opaque "ε.pDef" }
-
-extDefEnv : ((Name → Name) → (Name → Name)) → ∀ {n A B} → Env n A B → Env n A B
-extDefEnv ext Γ = record Γ { pDef = ext (pDef Γ) }
-
-extConEnv : ((Name → Name) → (Name → Name)) → ∀ {n A B} → Env n A B → Env n A B
-extConEnv ext Γ = record Γ { pCon = ext (pCon Γ) }
-
-[_≔_] : (old new : Name) (φ : Name → Name) → (Name → Name)
-[ old ≔ new ] φ x = [yes: (λ _ → new) no: (λ _ → φ x) ]′ (x ≟-Name old)
-
-↑pVar : ℕ → (ℕ → ℕ) → (ℕ → ℕ)
-↑pVar zero = id
-↑pVar (suc n) = ↑pVar n ∘ mapVar↑'
-
-on-pVar : ∀ {n A B C D}
-            (fᵢ : Fin n → (A → B) → (C → D))
-            (fᵣ : (A → B) → (C → D))
-          → Env n A B → Env n C D
-on-pVar fᵢ fᵣ Γ = record
-  { pVarᵢ = λ i → fᵢ i (pVarᵢ Γ i)
-  ; pVarᵣ = fᵣ (pVarᵣ Γ)
-  ; pCon = pCon Γ
-  ; pDef = pDef Γ }
-
-_+↑ : ∀ {n} → Env' n → Env' n
-_+↑ {n} = on-pVar goi gor
-  where
-    goi : Fin n → (ℕ → ℕ) → (ℕ → ℕ)
-    goi x f = _+_ (n ∸ Fin▹ℕ x) ∘ ↑pVar 1 (_+_ (Fin▹ℕ x) ∘ f)
-
-    gor : (ℕ → ℕ) → (ℕ → ℕ)
-    gor f = ↑pVar 1 (_+_ n ∘ f)
-
-_+'_ : ∀ {w} → Env' w → ℕ → Env' w
-Γ +' n = record { pVarᵢ = λ i → _+_ n ∘ pVarᵢ Γ i
-                ; pVarᵣ = _+_ n ∘ pVarᵣ Γ
-                ; pCon = pCon Γ
-                ; pDef = pDef Γ }
-
-_+1 : ∀ {w} → Env' w → Env' w
-Γ +1 = Γ +' 1
 
 pattern `⟦zero⟧  = con (quote ⟦ℕ⟧.⟦zero⟧) []
 pattern `⟦suc⟧ t = con (quote ⟦ℕ⟧.⟦suc⟧)  (argᵛʳ t ∷ [])

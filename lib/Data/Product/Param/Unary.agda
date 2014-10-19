@@ -3,7 +3,8 @@ module Data.Product.Param.Unary where
 open import Level
 open import Data.Product
   renaming (proj₁ to fst; proj₂ to snd)
-open import Relation.Unary.Logical
+open import Type.Param.Unary
+open import Function.Param.Unary
 
 record [Σ] {a b aₚ bₚ}
            {A : Set a}

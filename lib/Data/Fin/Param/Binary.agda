@@ -1,17 +1,21 @@
 -- NOTE with-K
 module Data.Fin.Param.Binary where
 
-open import Data.Nat.Param.Binary
 open import Data.Fin
+open import Data.Nat
+open import Function
+
+open import Data.Nat.Param.Binary
 open import Reflection.NP
 open import Reflection.Param
+open import Reflection.Param.Env
 open import Function.Param.Binary
 open import Type.Param.Binary
 
 data ⟦Fin⟧ : (⟦ℕ⟧ ⟦→⟧ ⟦Set₀⟧) Fin Fin
 
 private
-  ⟦Fin⟧-ctor = λ c → unEl (param-ctor-by-name (extDefEnv [ quote Fin ≔ quote ⟦Fin⟧ ] defEnv2) c)
+  ⟦Fin⟧-ctor = λ c → unEl (param-ctor-by-name (extDefEnv [ quote Fin ≔ quote ⟦Fin⟧ ] ⟦ℕ⟧-env) c)
 
 data ⟦Fin⟧ where
   ⟦zero⟧ : unquote (⟦Fin⟧-ctor (quote Fin.zero))
@@ -25,7 +29,7 @@ inject₁ (suc i) = suc (inject₁ i)
 
 defEnv2Fin = extConEnv ([ quote Fin.zero ≔ quote ⟦Fin⟧.⟦zero⟧ ] ∘
                         [ quote Fin.suc  ≔ quote ⟦Fin⟧.⟦suc⟧  ])
-             (extDefEnv [ quote Fin ≔ quote ⟦Fin⟧ ] defEnv2)
+             (extDefEnv [ quote Fin ≔ quote ⟦Fin⟧ ] ⟦ℕ⟧-env)
 
 open import Data.Fin using (inject₁)
 

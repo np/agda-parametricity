@@ -1,4 +1,5 @@
-open import Relation.Binary.Logical
+open import Type.Param.Binary
+open import Function.Param.Binary
 
 open import Data.Bool
   using    (not; _∧_; _∨_; _xor_)

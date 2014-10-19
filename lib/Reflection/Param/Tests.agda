@@ -1,36 +1,33 @@
 open import Level hiding (zero; suc)
-open import Relation.Unary.Logical
-open import Relation.Binary.Logical
-open import Data.One hiding (_≟_)
-
+open import Data.Unit renaming (⊤ to 𝟙; tt to 0₁)
 open import Data.Bool
   using    (not)
   renaming (Bool to 𝟚; false to 0₂; true to 1₂)
-
-open import Data.Two.Param.Binary
 open import Data.String.Core using (String)
 open import Data.Float       using (Float)
 open import Function
 open import Data.Fin using (Fin; zero; suc)
-{-
-open import Data.Nat.Show renaming (show to showNat)
-open import Data.Vec using (Vec; []; _∷_; replicate; tabulate; allFin; reverse; _⊛_; toList) renaming (map to vmap)
-open import Data.List using (List; []; _∷_; _++_)
-open import Data.String  using (String) renaming (_++_ to _++ˢ_)
-open import Reflection.NP
-open import Relation.Nullary.NP
--}
 open import Data.Nat hiding (_≟_)
---open import Data.Nat.Logical hiding (_≟_) renaming (zero to ⟦zero⟧; suc to ⟦suc⟧)
-open import Data.Nat.Param.Binary
 open import Relation.Binary.PropositionalEquality using (_≡_; refl)
 
+open import Function.Param.Unary
+open import Function.Param.Binary
+open import Type.Param.Unary
+open import Type.Param.Binary
+open import Data.Two.Param.Binary
+open import Data.Nat.Param.Binary
 open import Reflection.NP
 open import Reflection.Param
+open import Reflection.Param.Env
 
 module Reflection.Param.Tests where
 
+-- Local "imports" to avoid depending on nplib
 private
+  postulate
+    opaque : ∀ {a b} {A : Set a} {B : Set b} → A → B → B
+    -- opaque-rule : ∀ {x} y → opaque x y ≡ y
+
   ★₀ = Set₀
   ★₁ = Set₁
 
@@ -79,8 +76,8 @@ eqTerm Γ (def f args) u = {!!}
 eqTerm _ _ = ?
 -}
 
-import Reflection.Printer as Pr
-open Pr using (var;con;def;lam;pi;sort;unknown;showTerm;showType;showDef;showFunDef)
+-- import Reflection.Printer as Pr
+-- open Pr using (var;con;def;lam;pi;sort;unknown;showTerm;showType;showDef;showFunDef)
 {-
 import Reflection.Simple as Si
 open Si using (var;con;def;lam;pi;sort;unknown;simple;showTerm)
