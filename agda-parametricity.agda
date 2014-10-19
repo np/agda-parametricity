@@ -1,9 +1,19 @@
 module agda-parametricity where
+import Data.Dec.Param.Binary
+import Data.Dec.Param.Unary
 import Data.Fin.Param.Binary
+import Data.Maybe.Param.Binary
+import Data.Maybe.Param.Unary
 import Data.Nat.Param.Binary
+import Data.One.Param.Binary
 import Data.One.Param.Unary
+import Data.Product.Param.Binary
 import Data.Product.Param.Unary
+import Data.Sum.Param.Binary
+import Data.Sum.Param.Unary
 import Data.Two.Param.Binary
+import Data.Two.Param.Unary
+import Data.Zero.Param.Binary
 import Data.Zero.Param.Unary
 import Function.Param.Binary
 import Function.Param.Unary

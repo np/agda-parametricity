@@ -202,7 +202,9 @@ defEnv2 = record { pVarᵢ = ε-pVarᵢ "defEnv2"
 param1-[False]-type = param-type-by-name defEnv1 (quote [False])
 param1-[False]-term = param-term-by-name defEnv1 (quote [False])
 
-data List' (A : Set) : Set where
+-- Set₁ is here because ⟦List'⟧ is not using parameters, hence gets bigger.
+-- This only happens without-K given the new rules for data types.
+data List' (A : Set) : Set₁ where
   []  : List' A
   _∷_ : A → List' A → List' A
 
@@ -210,7 +212,8 @@ map' : ∀ {A B} → (A → B) → List' A → List' B
 map' f []       = []
 map' f (x ∷ xs) = f x ∷ map' f xs
 
-data ⟦List'⟧ : (⟦Set₀⟧ ⟦→⟧ ⟦Set₀⟧) List' List'
+-- The generated type bigger since it is a familly for no reason.
+data ⟦List'⟧ : (⟦Set₀⟧ ⟦→⟧ ⟦Set₁⟧) List' List'
 
 private
   ⟦List'⟧-ctor = λ c → unEl (param-ctor-by-name (extDefEnv [ quote List' ≔ quote ⟦List'⟧ ] (ε 2)) c)
@@ -219,7 +222,7 @@ data ⟦List'⟧ where
   ⟦[]⟧  : unquote (⟦List'⟧-ctor (quote List'.[]))
   _⟦∷⟧_ : unquote (⟦List'⟧-ctor (quote List'._∷_))
 
-defEnv2' = extConEnv ([ quote List'.[]  ≔ quote ⟦List'⟧.⟦[]⟧ ] ∘
+defEnv2' = extConEnv ([ quote List'.[]  ≔ quote ⟦List'⟧.⟦[]⟧  ] ∘
                       [ quote List'._∷_ ≔ quote ⟦List'⟧._⟦∷⟧_ ])
            (extDefEnv [ quote List' ≔ quote ⟦List'⟧ ] (ε 2))
 

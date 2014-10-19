@@ -1,6 +1,11 @@
+{-# OPTIONS --without-K #-}
+open import Level
+open import Algebra.FunctionProperties
+open import Relation.Nullary
+open import Relation.Binary
+
 module Function.Param.Unary where
 
-open import Level
 open import Type.Param.Unary
 
 private
@@ -50,9 +55,6 @@ _[→]e_ : ∀ {a aₚ} {A : ★ a} (Aₚ : A → ★ aₚ)
            (f : A → B) → ★ _
 _[→]e_ Aₚ Bₚ = [Π]e Aₚ (λ _ → Bₚ)
 
-open import Relation.Nullary
-open import Relation.Binary
-
 -- Products [Σ], [∃], [×] are in Data.Product.Param.Unary
 
 -- open import Relation.Unary.NP using (Pred)
@@ -81,3 +83,9 @@ private
 [Rel] : ∀ {a aₚ} {A : ★ a} (Aₚ : A → ★ aₚ)
           {r} rₚ (∼ : Rel A r) → ★ _
 [Rel] Aₚ rₚ = [REL] Aₚ Aₚ rₚ
+
+[Op₁] : ∀ {a} → ([★] {a} a [→] [★] a) Op₁
+[Op₁] Aₚ = Aₚ [→] Aₚ
+
+[Op₂] : ∀ {a aₚ} → ([★] {a} (a ⊔ aₚ) [→] [★] (a ⊔ aₚ)) Op₂
+[Op₂] Aₚ = Aₚ [→] Aₚ [→] Aₚ

@@ -1,5 +1,6 @@
 open import Level
 open import Type.Param.Binary
+open import Algebra.FunctionProperties
 
 module Function.Param.Binary where
 
@@ -113,3 +114,9 @@ private
 ⟦Rel⟧ : ∀ {a₁ a₂ aᵣ} {A₁ : ★ a₁} {A₂ : ★ a₂} (Aᵣ : A₁ → A₂ → ★ aᵣ)
           {r₁ r₂} ℓᵣ (∼₁ : Rel A₁ r₁) (∼₂ : Rel A₂ r₂) → ★ _
 ⟦Rel⟧ Aᵣ rᵣ = ⟦REL⟧ Aᵣ Aᵣ rᵣ
+
+⟦Op₁⟧ : ∀ {a₁ a₂ aᵣ} → (⟦★⟧ {a₁} {a₂} (a₁ ⊔ a₂ ⊔ aᵣ) ⟦→⟧ ⟦★⟧ _) Op₁ Op₁
+⟦Op₁⟧ Aᵣ = Aᵣ ⟦→⟧ Aᵣ
+
+⟦Op₂⟧ : ∀ {a₁ a₂ aᵣ} → (⟦★⟧ {a₁} {a₂} (a₁ ⊔ a₂ ⊔ aᵣ) ⟦→⟧ ⟦★⟧ _) Op₂ Op₂
+⟦Op₂⟧ Aᵣ = Aᵣ ⟦→⟧ Aᵣ ⟦→⟧ Aᵣ

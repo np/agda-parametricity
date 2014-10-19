@@ -1,3 +1,4 @@
+{-# OPTIONS --without-K #-}
 open import Function
 open import Data.Nat hiding (_≟_)
 open import Data.Nat.Show renaming (show to showNat)
