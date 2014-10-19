@@ -3,9 +3,10 @@ module Data.Fin.Param.Binary where
 
 open import Data.Nat.Param.Binary
 open import Data.Fin
-open import Relation.Binary.Logical
 open import Reflection.NP
 open import Reflection.Param
+open import Function.Param.Binary
+open import Type.Param.Binary
 
 data ⟦Fin⟧ : (⟦ℕ⟧ ⟦→⟧ ⟦Set₀⟧) Fin Fin
 
