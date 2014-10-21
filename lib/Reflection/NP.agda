@@ -4,7 +4,7 @@ module Reflection.NP where
 open import Level
   renaming (zero to ₀; suc to ₛ)
 open import Data.Nat
-  using (ℕ; zero; suc; _+_) renaming (_⊔_ to _⊔ℕ_)
+  using (ℕ; module ℕ; zero; suc; _+_) renaming (_⊔_ to _⊔ℕ_)
 open import Data.List
 open import Data.String.Core using (String)
 open import Data.Maybe renaming (map to map?)
@@ -145,6 +145,9 @@ getSort (el s _) = s
 unArg : ∀ {A} → Arg A → A
 unArg (arg _ a) = a
 
+unAbs : ∀ {A} → Abs A → A
+unAbs (abs _ a) = a
+
 -- `Level : Term
 pattern `Level = def (quote Level) []
 
@@ -269,14 +272,17 @@ module _ (Γ : MapVar) where
   mapVarDefinition axiom = axiom
   mapVarDefinition primitive′ = primitive′
 
-sucMapVar : MapVar
-sucMapVar = liftMapVar suc
+raiseMapVar : ℕ → MapVar
+raiseMapVar k = liftMapVar (_+_ k)
 
-liftTerm : Term → Term
-liftTerm = mapVarTerm sucMapVar
+raiseTerm : ℕ → Term → Term
+raiseTerm = mapVarTerm ∘ raiseMapVar
 
-liftType : Type → Type
-liftType = mapVarType sucMapVar
+raiseType : ℕ → Type → Type
+raiseType = mapVarType ∘ raiseMapVar
+
+raiseArgs : ℕ → Args → Args
+raiseArgs = mapVarArgs ∘ raiseMapVar
 
 noHintsMapVar : MapVar
 noHintsMapVar = record idMapVar { onStr = const "_" }
@@ -290,30 +296,33 @@ noHintsType = mapVarType noHintsMapVar
 noHintsDefinition : Definition → Definition
 noHintsDefinition = mapVarDefinition noHintsMapVar
 
+noAbsType : Type → Abs Type
+noAbsType ty = abs "_" (raiseType 1 ty)
+
 pattern piᵛʳ s t u = pi (argᵛʳ t) (abs s u)
 pattern piʰʳ s t u = pi (argʰʳ t) (abs s u)
 
-`Π : Arg Type → Type → Type
-`Π t u = el (getSort (unArg t) `⊔` getSort u) (pi t (abs "_" u))
+`Π : Arg Type → Abs Type → Type
+`Π t u = el (getSort (unArg t) `⊔` getSort (unAbs u)) (pi t u)
 
-`Πᵛʳ : Type → Type → Type
+`Πᵛʳ : Type → Abs Type → Type
 `Πᵛʳ t u = `Π (argᵛʳ t) u
 
-`Πʰʳ : Type → Type → Type
+`Πʰʳ : Type → Abs Type → Type
 `Πʰʳ t u = `Π (argʰʳ t) u
 
 _`→_ : Arg Type → Type → Type
-t `→ u = `Π t (liftType u)
+t `→ u = `Π t (noAbsType u)
 
 _`→ʰʳ_ : Type → Type → Type
-t `→ʰʳ u = `Πʰʳ t (liftType u)
+t `→ʰʳ u = `Πʰʳ t (noAbsType u)
 
 _`→ᵛʳ_ : Type → Type → Type
-t `→ᵛʳ u = `Πᵛʳ t (liftType u)
+t `→ᵛʳ u = `Πᵛʳ t (noAbsType u)
 
 `Πⁿ : List (Arg Type) → Type → Type
 `Πⁿ []       u = u
-`Πⁿ (t ∷ ts) u = `Π t (`Πⁿ ts u)
+`Πⁿ (t ∷ ts) u = `Π t (abs "_" (`Πⁿ ts u))
 
 `Πᵛʳⁿ : List Type → Type → Type
 `Πᵛʳⁿ ts u = `Πⁿ (map argᵛʳ ts) u
@@ -574,7 +583,7 @@ module Revelator (tyH : Type) where
     tyF = tyH `→ᵛʳ tyE
     tm : Term → ℕ → Args → Term
     tm (pi (arg (arg-info v _) t₁) (abs s (el _ t₂))) y as
-      = lamᵛ s (tm t₂ (suc y) (mapVarArgs sucMapVar as ++ argʳ v (var 0 []) ∷ []))
+      = lamᵛ s (tm t₂ (suc y) (raiseArgs 1 as ++ argʳ v (var 0 []) ∷ []))
     tm (var x args) = var
     tm (def f args) = var
     tm (sort s)     = var
