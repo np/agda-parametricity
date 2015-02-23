@@ -12,6 +12,15 @@ open import Reflection.Param.Env
 open import Function.Param.Binary
 open import Type.Param.Binary
 
+{-
+-- See Data.Fin.Logical for an example
+
+data ⟦Fin⟧ : (⟦ℕ⟧ ⟦→⟧ ⟦Set₀⟧) Fin Fin where
+  ⟦zero⟧ : ∀ {n₀ n₁}(n : ⟦ℕ⟧ n₀ n₁) → ⟦Fin⟧ (⟦suc⟧ n) zero zero
+  ⟦suc⟧  : (∀⟨ n ∶ ⟦ℕ⟧ ⟩⟦→⟧ ⟦Fin⟧ n ⟦→⟧ ⟦Fin⟧ (⟦suc⟧ n)) suc suc
+-}
+
+{- TODO
 data ⟦Fin⟧ : (⟦ℕ⟧ ⟦→⟧ ⟦Set₀⟧) Fin Fin
 
 private
@@ -34,3 +43,4 @@ defEnv2Fin = extConEnv ([ quote Fin.zero ≔ quote ⟦Fin⟧.⟦zero⟧ ] ∘
 open import Data.Fin using (inject₁)
 
 unquoteDecl ⟦inject₁⟧ = pFunNameRec defEnv2Fin (quote inject₁) ⟦inject₁⟧
+-}
