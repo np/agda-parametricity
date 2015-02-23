@@ -379,7 +379,7 @@ data List₀ (A : Set) : Set where
   []  : List₀ A
   _∷_ : A → List₀ A → List₀ A
 
-map₀ : ∀ {A B} → (A → B) → List₀ A → List₀ B
+map₀ : ∀ {A B} (f : A → B) (xs : List₀ A) → List₀ B
 map₀ f []       = []
 map₀ f (x ∷ xs) = f x ∷ map₀ f xs
 
