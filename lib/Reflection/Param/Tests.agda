@@ -394,9 +394,7 @@ data ⟦List₀⟧ {A₀ A₁ : Set} (Aᵣ : A₀ → A₁ → Set₀) : List₀
 
 con⟦List₀⟧ = conSkip' 3
 ⟦List₀⟧-env = record (ε 2)
-  { pDef = [ quote List₀ ≔ quote ⟦List₀⟧ ]
-          ([ quote ℕ     ≔ quote ⟦ℕ⟧ ]
-          ([ quote id₀   ≔ quote ⟦id₀⟧ ] id))
+  { pDef = [ quote List₀ ≔ quote ⟦List₀⟧ ] id
   ; pConP = [ quote List₀.[]  ≔ con (quote ⟦List₀⟧.⟦[]⟧)  ]
            ([ quote List₀._∷_ ≔ con (quote ⟦List₀⟧._⟦∷⟧_) ]
             con)
@@ -415,9 +413,15 @@ unquoteDef ⟦idList₀⟧ = param-rec-clauses-by-name ⟦List₀⟧-env (quote 
 ⟦map₀⟧ {x0} {x1} (x2) {x3} {x4} (x5) {x6} {x7} (x8) {._} {._} (_⟦∷⟧_ {x11} {x12} (x13) {x14} {x15} (x16) )  = _⟦∷⟧_ {x6 (x11)} {x7 (x12)} (x8 {x11} {x12} (x13)) {map₀ {x0} {x3} (x6) (x14)} {map₀ {x1} {x4} (x7) (x15)} (⟦map₀⟧ {x0} {x1} (x2) {x3} {x4} (x5) {x6} {x7} (x8) {x14} {x15} (x16))
 -}
 
-unquoteDecl ⟦map₀⟧ = param-rec-def-by-name ⟦List₀⟧-env (quote map₀) ⟦map₀⟧
+unquoteDecl ⟦map₀⟧
+ = param-rec-def-by-name ⟦List₀⟧-env (quote map₀) ⟦map₀⟧
 
 {-
+map-nat : ∀ (f : ∀ {X} → List₀ X → List₀ X)
+            {A B : Set} (g : A → B)
+          → f ∘ map₀ g ~ map₀ g ∘ f
+map-nat f g x = {!⟦map₀⟧ _≡_ _≡_ {g}!}
+
   -- The generated type is bigger since it is a familly for no reason.
   data ⟦List₀⟧ : (⟦Set₀⟧ ⟦→⟧ ⟦Set₁⟧) List₀ List₀
 
