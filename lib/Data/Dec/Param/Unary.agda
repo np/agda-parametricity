@@ -1,6 +1,6 @@
 {-# OPTIONS --without-K #-}
 open import Level
-open import Relation.Nullary.Core
+open import Relation.Nullary
 open import Relation.Binary
 
 open import Function.Param.Unary

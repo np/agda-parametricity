@@ -11,7 +11,8 @@ open import Function
 open import Data.Fin using (Fin; zero; suc)
 open import Data.Nat hiding (_≟_)
 open import Data.List using (List; []; _∷_)
-open import Relation.Binary.PropositionalEquality using (_≡_; refl)
+open import Relation.Binary.PropositionalEquality
+  using (_≡_; refl) renaming (_≗_ to _~_)
 
 open import Function.Param.Unary
 open import Function.Param.Binary

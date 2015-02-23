@@ -6,7 +6,7 @@ open import Level
 open import Data.Nat
   using (ℕ; module ℕ; zero; suc; _+_) renaming (_⊔_ to _⊔ℕ_)
 open import Data.List
-open import Data.String.Core using (String)
+open import Data.String.Base using (String)
 open import Data.Maybe renaming (map to map?)
 open import Data.Vec.N-ary using (N-ary; N-ary-level)
 open import Function
