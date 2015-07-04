@@ -5,7 +5,7 @@ open import Data.Unit renaming (⊤ to 𝟙; tt to 0₁)
 open import Data.Bool
   using    (not)
   renaming (Bool to 𝟚; false to 0₂; true to 1₂)
-open import Data.String.Core using (String)
+open import Data.String.Base using (String)
 open import Data.Float       using (Float)
 open import Function
 open import Data.Fin using (Fin; zero; suc)
@@ -236,23 +236,26 @@ data Wrapper (A : Set₀) : Set₀ where
 idWrapper : ∀ {A} → Wrapper A → Wrapper A
 idWrapper (wrap x) = wrap x
 
-data [Wrapper] {A : Set} (Aₚ : A → Set₀)
-   : Wrapper A → Set₀ where
-  [wrap] : (Aₚ [→] [Wrapper] Aₚ) wrap
+module Param where
 
-[Wrapper]-env = record (ε 1)
-  { pDef = [ quote Wrapper ≔ quote [Wrapper] ] id
-  ; pConP = [ quote wrap ≔ con (quote [wrap])  ] con
-  ; pConT = [ quote wrap ≔ conSkip' 2 (quote [wrap]) ] con
-  }
-
-unquoteDecl [idWrapper] =
-  param-rec-def-by-name [Wrapper]-env (quote idWrapper) [idWrapper]
+  data [Wrapper] {A : Set} (Aₚ : A → Set₀)
+     : Wrapper A → Set₀ where
+    [wrap] : (Aₚ [→] [Wrapper] Aₚ) wrap
 
   {-
-[idWrapper] = {!  param-rec-def-by-name [Wrapper]-env (quote idWrapper) [idWrapper]!}
--- [idWrapper] = {!  param-rec-def-by-name [Wrapper]-env (quote idWrapper) [idWrapper]!}
--}
+  [Wrapper]-env = record (ε 1)
+    { pDef = [ quote Wrapper ≔ quote [Wrapper] ] id
+    ; pConP = [ quote wrap ≔ con (quote [wrap])  ] con
+    ; pConT = [ quote wrap ≔ conSkip' (quote [wrap]) ] con
+    }
+
+  unquoteDecl [idWrapper] =
+    param-rec-def-by-name [Wrapper]-env (quote idWrapper) [idWrapper]
+  -}
+  {-
+  [idWrapper] = {!  param-rec-def-by-name [Wrapper]-env (quote idWrapper) [idWrapper]!}
+  -- [idWrapper] = {!  param-rec-def-by-name [Wrapper]-env (quote idWrapper) [idWrapper]!}
+  -}
 
 {-
 -- The generated type bigger since it is a familly for no reason.
@@ -264,6 +267,8 @@ private
 data ⟦Wrapper⟧ where
   ⟦wrap⟧ : unquote (⟦Wrapper⟧-ctor (quote Wrapper.wrap))
 -}
+
+{-
 data ⟦Wrapper⟧ {A₀ A₁ : Set} (Aᵣ : A₀ → A₁ → Set₀)
    : Wrapper A₀ → Wrapper A₁ → Set₀ where
   ⟦wrap⟧ : (Aᵣ ⟦→⟧ ⟦Wrapper⟧ Aᵣ) wrap wrap
@@ -305,6 +310,7 @@ unquoteDef ⟦idWrapper⟧2 = ⟦idWrapper⟧-clauses
 
 unquoteDecl ⟦idWrapper⟧ =
   param-rec-def-by-name ⟦Wrapper⟧-env (quote idWrapper) ⟦idWrapper⟧
+-}
 
 data Bot (A : Set₀) : Set₀ where
   bot : Bot A → Bot A
@@ -326,7 +332,7 @@ data [Bot] {A : Set} (Aₚ : A → Set₀)
 [gobot]' {x0} (x1) {._} ([bot] {x2} x3)
   = [gobot]' {x0} x1 {x2} x3
 
--- [gobot]' = {!showClauses "[gobot]'" (param-rec-clauses-by-name [Bot]-env (quote gobot) (quote [gobot]'))!}
+-- [gobot]' = showClauses "[gobot]'" (param-rec-clauses-by-name [Bot]-env (quote gobot) (quote [gobot]'))
 
 [gobot]2 : (∀⟨ A ∶ [Set₀] ⟩[→] [Bot] A [→] A) gobot
 
@@ -341,8 +347,8 @@ data [Bot] {A : Set} (Aₚ : A → Set₀)
        arg (arg-info visible relevant) (var "xᵣ") ∷ []))
      ∷ [])
     (def (quote [gobot]2)
-     (arg (arg-info hidden  relevant) (var 4 []) ∷
-      arg (arg-info visible relevant) (var 3 []) ∷
+     (arg (arg-info hidden  relevant) (var 3 []) ∷
+      arg (arg-info visible relevant) (var 2 []) ∷
       arg (arg-info hidden  relevant) (var 1 []) ∷
       arg (arg-info visible relevant) (var 0 []) ∷ []))
     ∷ []
@@ -500,6 +506,7 @@ unquoteDef ⟦map₀⟧ = param-rec-clauses-by-name ⟦List₀⟧-env (quote map
 foo : {x0 : Set0} → {x1 : Set0} → (x2 : (x2 : x0) → (x3 : x1) → Set0) → {x3 : Set0} → {x4 : Set0} → (x5 : (x5 : x3) → (x6 : x4) → Set0) → {x6 : (x6 : x0) → x3} → {x7 : (x7 : x1) → x4} → (x8 : {x8 : x0} → {x9 : x1} → (x10 : x2 (x8) (x9)) → x5 (x6 (x8)) (x7 (x9))) → {x9 : Reflection.Param.List₀ (x0)} → {x10 : Reflection.Param.List₀ (x1)} → (x11 : Reflection.Param.⟦List₀⟧ {x0} {x1} (x2) (x9) (x10)) → Reflection.Param.⟦List₀⟧ {x3} {x4} (x5) (Reflection.Param.map₀ {x0} {x3} (x6) (x9)) (Reflection.Param.map₀ {x1} {x4} (x7) (x10))
 foo {A} {A} (A) {B} {B} (B) {f} {f} (f) {._} {._} (Reflection.Param.⟦List₀⟧.⟦[]⟧ )  = Reflection.Param.⟦List₀⟧.⟦[]⟧
 foo {A} {A} (A) {B} {B} (B) {f} {f} (f) {._} {._} (Reflection.Param.⟦List₀⟧._⟦∷⟧_ {x} {x} (x) {xs} {xs} (xs) )  = Reflection.Param.⟦List₀⟧._⟦∷⟧_ {x0 (x0)} {x0 (x0)} (x0 {x0} {x0} (x0)) {Reflection.Param.map₀ {x0} {x0} (x0) (x0)} {Reflection.Param.map₀ {x0} {x0} (x0) (x0)} (Reflection.Param.test' {x0} {x0} (x0) {x0} {x0} (x0) {x0} {x0} (x0) {x0} {x0} (x0))
+-}
 -}
 
 -- test' = {! showFunDef "foo" (param-rec-def-by-name ⟦List₀⟧-env (quote map₀) (quote test'))!}
