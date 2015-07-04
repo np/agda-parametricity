@@ -102,6 +102,23 @@ module _ {w} (Γ : Env' w) where
 
     mapTypeVarᵢ : (i : Fin w) (t : Type) → Type
     mapTypeVarᵢ = mapVarType ∘ liftMapVar ∘ pVarᵢ Γ
+
+⟦ℕ⟧-env = record (ε 2)
+               { pDef  = [ quote ℕ ≔ quote ⟦ℕ⟧ ] id
+               ; pConP = [ quote zero ≔ con (quote ⟦zero⟧) ]
+                        ([ quote suc  ≔ con (quote ⟦suc⟧)  ]
+                         con)
+               ; pConT = [ quote zero ≔ con (quote ⟦zero⟧) ]
+                        ([ quote zero ≔ con (quote ⟦zero⟧) ]
+                         con)
+               }
+
+{-
+defEnv2Fin = extConEnv ([ quote Fin.zero ≔ quote ⟦Fin⟧.⟦zero⟧ ] ∘
+                        [ quote Fin.suc  ≔ quote ⟦Fin⟧.⟦suc⟧  ])
+             (extDefEnv [ quote Fin ≔ quote ⟦Fin⟧ ] ⟦ℕ⟧-env)
+-}
+
 -- -}
 -- -}
 -- -}

@@ -8,22 +8,10 @@ open import Relation.Nullary
 open import Relation.Binary
 open import Function.Param.Binary
 open import Type.Param.Binary
-open import Reflection
-open import Reflection.Param.Env
 
 data ⟦ℕ⟧ : ⟦Set₀⟧ ℕ ℕ where
   ⟦zero⟧ : ⟦ℕ⟧ zero zero
   ⟦suc⟧  : ∀ {n₁ n₂} (nᵣ : ⟦ℕ⟧ n₁ n₂) → ⟦ℕ⟧ (suc n₁) (suc n₂)
-
-⟦ℕ⟧-env = record (ε 2)
-               { pDef  = [ quote ℕ ≔ quote ⟦ℕ⟧ ] id
-               ; pConP = [ quote zero ≔ con (quote ⟦zero⟧) ]
-                        ([ quote suc  ≔ con (quote ⟦suc⟧)  ]
-                         con)
-               ; pConT = [ quote zero ≔ con (quote ⟦zero⟧) ]
-                        ([ quote zero ≔ con (quote ⟦zero⟧) ]
-                         con)
-               }
 
 _⟦+⟧_ : (⟦ℕ⟧ ⟦→⟧ ⟦ℕ⟧ ⟦→⟧ ⟦ℕ⟧) _+_ _+_
 ⟦zero⟧  ⟦+⟧ n = n

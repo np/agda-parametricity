@@ -6,9 +6,6 @@ open import Data.Nat
 open import Function
 
 open import Data.Nat.Param.Binary
-open import Reflection.NP
-open import Reflection.Param
-open import Reflection.Param.Env
 open import Function.Param.Binary
 open import Type.Param.Binary
 
@@ -35,10 +32,6 @@ inject₁ : ∀ {m} → Fin m → Fin (suc m)
 inject₁ zero    = zero
 inject₁ (suc i) = suc (inject₁ i)
 -}
-
-defEnv2Fin = extConEnv ([ quote Fin.zero ≔ quote ⟦Fin⟧.⟦zero⟧ ] ∘
-                        [ quote Fin.suc  ≔ quote ⟦Fin⟧.⟦suc⟧  ])
-             (extDefEnv [ quote Fin ≔ quote ⟦Fin⟧ ] ⟦ℕ⟧-env)
 
 open import Data.Fin using (inject₁)
 
