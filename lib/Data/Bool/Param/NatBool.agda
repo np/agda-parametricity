@@ -5,7 +5,7 @@ module Data.Bool.Param.NatBool where
 open import Data.Nat
 import Data.Bool
 
-open import Relation.Nullary.Core
+open import Relation.Nullary
 open import Type.Param.Binary
 open import Function.Param.Binary
 
