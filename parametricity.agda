@@ -1,4 +1,4 @@
-module agda-parametricity where
+module parametricity where
 import Data.Bool.Param.NatBool
 import Data.Dec.Param.Binary
 import Data.Dec.Param.Unary
