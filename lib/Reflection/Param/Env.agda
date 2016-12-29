@@ -8,6 +8,7 @@ open import Data.String using (String) renaming (_++_ to _++ˢ_)
 open import Data.List using (List; map; _++_; replicate)
 open import Function
 open import Relation.Nullary
+open import Data.Nat.Param.Binary
 
 open import Reflection.NP
 
@@ -99,9 +100,6 @@ _+1 : ∀ {w} → Env' w → Env' w
 module _ {w} (Γ : Env' w) where
     mapTermVarᵢ : (i : Fin w) (t : Term) → Term
     mapTermVarᵢ = mapVarTerm ∘ liftMapVar ∘ pVarᵢ Γ
-
-    mapTypeVarᵢ : (i : Fin w) (t : Type) → Type
-    mapTypeVarᵢ = mapVarType ∘ liftMapVar ∘ pVarᵢ Γ
 
 ⟦ℕ⟧-env = record (ε 2)
                { pDef  = [ quote ℕ ≔ quote ⟦ℕ⟧ ] id

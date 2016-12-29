@@ -507,7 +507,6 @@ foo : {x0 : Set0} → {x1 : Set0} → (x2 : (x2 : x0) → (x3 : x1) → Set0) �
 foo {A} {A} (A) {B} {B} (B) {f} {f} (f) {._} {._} (Reflection.Param.⟦List₀⟧.⟦[]⟧ )  = Reflection.Param.⟦List₀⟧.⟦[]⟧
 foo {A} {A} (A) {B} {B} (B) {f} {f} (f) {._} {._} (Reflection.Param.⟦List₀⟧._⟦∷⟧_ {x} {x} (x) {xs} {xs} (xs) )  = Reflection.Param.⟦List₀⟧._⟦∷⟧_ {x0 (x0)} {x0 (x0)} (x0 {x0} {x0} (x0)) {Reflection.Param.map₀ {x0} {x0} (x0) (x0)} {Reflection.Param.map₀ {x0} {x0} (x0) (x0)} (Reflection.Param.test' {x0} {x0} (x0) {x0} {x0} (x0) {x0} {x0} (x0) {x0} {x0} (x0))
 -}
--}
 
 -- test' = {! showFunDef "foo" (param-rec-def-by-name ⟦List₀⟧-env (quote map₀) (quote test'))!}
 

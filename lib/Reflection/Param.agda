@@ -96,7 +96,7 @@ module _ {n} (Γ : Env' n) where
               (i     : Arg-info)
               (ty    : Type)
               (t₀ t₁ : Env' n → Vec Term n → Type) → Term
-    pPi∈ⁿ s (arg-info v r) ty t₀ t₁ = unEl (go Γ 0 (allFin n))
+    pPi∈ⁿ s (arg-info v r) ty t₀ t₁ = go Γ 0 (allFin n)
       where
       -- Add 'n' hidden arguments and one visible argument
       -- for the relation between the 'n' firsts.
@@ -105,7 +105,7 @@ module _ {n} (Γ : Env' n) where
           `Π (argʳ (target-visibility v) (t₀ Δ (allVarsFrom n 0)))
              (abs (hintᵣ s) (t₁ (Γ +↑) (allVarsFrom n 1)))
       go Δ k (i ∷ is) =
-          `Π (argʰ r (mapTypeVarᵢ Δ i ty))
+          `Π (argʰ r (mapTermVarᵢ Δ i ty))
              (abs (hintᵢ' k s) (go (Δ +1) (suc k) is))
 
 pAppⁿ : ∀ n (v : Visibility)(a tᵢ : Term) → Term
@@ -119,10 +119,10 @@ pSort∈ : ∀ {n} → Sort → Vec Term n → Type
 pSort∈ s = go 0
   where
     go : ℕ → ∀ {n} → Vec Term n → Type
-    go k []       = el (suc-sort s) (sort s)
-    go k (t ∷ ts) = `Πᵛʳ (raiseType k (el s t))
+    go k []       = sort s
+    go k (t ∷ ts) = `Πᵛʳ (raiseTerm k t)
                          (abs (hintₖ' k "A") (go (suc k) ts))
-    
+
 ----------------
 --- Patterns ---
 ----------------
@@ -185,30 +185,28 @@ module _ {n} where
     pArgs    : (Γ : Env' n) → Args    → Args
     pClause  : (Γ : Env' n) → Clause  → Clause
     pClauses : (Γ : Env' n) → Clauses → Clauses
-    pType∈   : (Γ : Env' n) → Type                     → Vec Term n → Type
     pTerm∈   : (Γ : Env' n) → Term                     → Vec Term n → Term
     pPi∈     : (Γ : Env' n) → String → Arg Type → Type → Vec Term n → Term
 
     pTerm Γ (lam v (abs s t)) = p^lam v s n (pTerm (Γ +↑) t)
-    pTerm Γ (var v args)      = var (pVarᵣ Γ v) (pArgs Γ args)
-    pTerm Γ (con c args)      = pConT Γ c (pArgs Γ args)
-    pTerm Γ (def d args)      = def (pDef Γ d) (pArgs Γ args)
+    pTerm Γ (var  v args)     = var (pVarᵣ Γ v) (pArgs Γ args)
+    pTerm Γ (con  c args)     = pConT Γ c (pArgs Γ args)
+    pTerm Γ (def  d args)     = def (pDef Γ d) (pArgs Γ args)
     pTerm Γ (lit l)           = pLit l
-    pTerm Γ (sort s)          = lam∈ "Aₖ" Γ λ _ → unEl ∘ pSort∈ s
+    pTerm Γ (sort s)          = lam∈ "Aₖ" Γ λ _ → pSort∈ s
     pTerm Γ (pi t (abs s u))  = lam∈ (hintₖ s) Γ λ Δ → pPi∈ Δ s t u
     pTerm Γ (pat-lam cs args) = pat-lam (pClauses Γ cs) (pArgs Γ args)
+    pTerm Γ (meta m args)     = unknown -- ??? newMeta λ m → meta m (pArgs Γ args)
     pTerm Γ unknown           = unknown
 
     pPi∈ Γ s (arg (arg-info v r) t) u as =
-      pPi∈ⁿ Γ s (arg-info v r) t (λ Δ → pType∈ Δ t) λ Δ vs →
-        pType∈ Δ u
+      pPi∈ⁿ Γ s (arg-info v r) t (λ Δ → pTerm∈ Δ t) λ Δ vs →
+        pTerm∈ Δ u
           (vmap (pAppⁿ n v) as ⊛ vs)
 
-    pTerm∈ Γ (sort s) = unEl ∘ pSort∈ s
+    pTerm∈ Γ (sort s)         = pSort∈ s
     pTerm∈ Γ (pi t (abs s u)) = pPi∈ Γ s t u
     pTerm∈ Γ t                = app (pTerm Γ t) ∘ toList ∘ vmap argᵛʳ -- <--- visible ?
-
-    pType∈ Γ (el s t) = el s ∘ pTerm∈ Γ t
 
     pArgs Γ [] = []
     pArgs Γ (arg i t ∷ as)
@@ -222,30 +220,20 @@ module _ {n} where
 
 module _ {n} (Γ : Env' n) where
     pType : (t : Term) (typeof-t : Type) → Type
-    pType t typeof-t = pType∈ Γ typeof-t (replicate t)
+    pType t typeof-t = pTerm∈ Γ typeof-t (replicate t)
 
-    pFunctionDef : Name → FunctionDef → FunctionDef
-    pFunctionDef d (fun-def t cs)
-      = fun-def (pType (def d []) t) (pClauses Γ cs)
+    pDefinitionClauses : Definition → Clauses
+    pDefinitionClauses (function cs) = pClauses Γ cs
+    pDefinitionClauses _ = opaque "pDefinitionClauses" []
 
-    param-fun-def-by-name : Name → FunctionDef
-    param-fun-def-by-name x with definition x
-    ... | function d = pFunctionDef x d
-    ... | _ = opaque "param-fun-def-by-name" unknown-fun-def
+    param-type-by-name : Name → TC Type
+    param-type-by-name d = mapTC (pType (def d [])) (getType d)
 
-    param-type-by-name : Name → Type
-    param-type-by-name d with definition d
-    ... | function (fun-def ty _) = pType (def d []) ty
-    ... | constructor′ = pType (con d []) (type d)
-    ... | _ = opaque "param-type-by-name" unknown-type
+    param-clauses-by-name : Name → TC Clauses
+    param-clauses-by-name d = mapTC pDefinitionClauses (getDefinition d)
 
-    param-clauses-by-name : Name → Clauses
-    param-clauses-by-name x with definition x
-    ... | function (fun-def _ cs) = pClauses Γ cs
-    ... | _ = []
-
-    param-term-by-name : Name → Term
-    param-term-by-name = pTerm Γ ∘ Get-term.from-name
+    param-term-by-name : Name → TC Term
+    param-term-by-name = mapTC (pTerm Γ) ∘ Get-term.from-name
 
 pTerm^ : ∀ (k : ℕ) {n} (Γ : Env' n) → Term → Term
 pTerm^ zero    Γ t = t
@@ -257,22 +245,19 @@ pType^ zero    Γ t typeof-t = typeof-t
 pType^ (suc k) Γ t typeof-t = pType^ k Γ (pTerm Γ t) (pType Γ t typeof-t)
 
 module _ (k : ℕ) {n} (Γ : Env' n) where
-    param-term-by-name^ : Name → Term
-    param-term-by-name^ = pTerm^ k Γ ∘ Get-term.from-name
+    param-term-by-name^ : Name → TC Term
+    param-term-by-name^ = mapTC (pTerm^ k Γ) ∘ Get-term.from-name
 
     -- When k=1 we can use `def n []` instead of `Get-term.from-name`
     -- The issue is that the `app` function does not do hereditary substition.
-    param-type-by-name^ : Name → Type
-    param-type-by-name^ n = pType^ k Γ (Get-term.from-name n) (type n)
+    param-type-by-name^ : Name → TC Type
+    param-type-by-name^ n = bindTC (Get-term.from-name n) (λ tm → mapTC (pType^ k Γ tm) (getType n))
 
-param-rec-clauses-by-name : ∀ {n} → Env' n → (x xₚ : Name) → Clauses
+param-rec-clauses-by-name : ∀ {n} → Env' n → (x xₚ : Name) → TC Clauses
 param-rec-clauses-by-name Γ x xₚ = param-clauses-by-name (extDefEnv [ x ≔ xₚ ] Γ) x
 
-param-rec-def-by-name : ∀ {n} → Env' n → (x xₚ : Name) → FunctionDef
-param-rec-def-by-name Γ x xₚ = param-fun-def-by-name (extDefEnv [ x ≔ xₚ ] Γ) x
-
-param-ctor-by-name : ∀ {n} → Env' n → (c : Name) → Type
-param-ctor-by-name Γ c = pType Γ (con c []) (type c)
+param-ctor-by-name : ∀ {n} → Env' n → (c : Name) → TC Type
+param-ctor-by-name Γ c = mapTC (pType Γ (con c [])) (getType c)
 -- -}
 -- -}
 -- -}
