@@ -17,7 +17,7 @@ data ⟦Maybe⟧ {a b r} {A : Set a} {B : Set b} (_∼_ : A → B → Set r) : M
 ⟦maybe⟧ _ _ justᵣ nothingᵣ (⟦just⟧ xᵣ) = justᵣ xᵣ
 ⟦maybe⟧ _ _ justᵣ nothingᵣ ⟦nothing⟧   = nothingᵣ
 
-⟦map?⟧ : ∀ {a b} → (∀⟨ Aᵣ ∶ ⟦Set⟧ a ⟩⟦→⟧ ∀⟨ Bᵣ ∶ ⟦Set⟧ b ⟩⟦→⟧ (Aᵣ ⟦→⟧ Bᵣ) ⟦→⟧ ⟦Maybe⟧ Aᵣ ⟦→⟧ ⟦Maybe⟧ Bᵣ) (map? {a} {b}) (map? {a} {b})
+⟦map?⟧ : ∀ {a b} → (∀⟨ Aᵣ ∶ ⟦Set⟧ a ⟩⟦→⟧ ∀⟨ Bᵣ ∶ ⟦Set⟧ b ⟩⟦→⟧ (Aᵣ ⟦→⟧ Bᵣ) ⟦→⟧ ⟦Maybe⟧ Aᵣ ⟦→⟧ ⟦Maybe⟧ Bᵣ) (map? {a} {_} {b}) (map? {a} {_} {b})
 ⟦map?⟧ _ _ fᵣ (⟦just⟧ xᵣ) = ⟦just⟧ (fᵣ xᵣ)
 ⟦map?⟧ _ _ fᵣ ⟦nothing⟧   = ⟦nothing⟧
 
