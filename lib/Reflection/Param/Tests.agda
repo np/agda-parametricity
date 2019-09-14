@@ -1,5 +1,4 @@
-{-# OPTIONS -vtc.unquote.decl:20 -vtc.unquote.def:20 #-}
-{-# OPTIONS --without-K #-}
+{-# OPTIONS --with-K #-}
 open import Level hiding (zero; suc)
 open import Data.Unit renaming (⊤ to 𝟙; tt to 0₁)
 open import Data.Bool
@@ -10,7 +9,7 @@ open import Data.Float       using (Float)
 open import Function
 open import Data.Fin using (Fin; zero; suc)
 open import Data.Nat hiding (_≟_)
-open import Data.List using (List; []; _∷_)
+open import Data.List using (List; []; _∷_; drop)
 open import Relation.Binary.PropositionalEquality
   using (_≡_; refl) renaming (_≗_ to _~_)
 
@@ -26,8 +25,8 @@ open import Reflection.Param.Env
 
 module Reflection.Param.Tests where
 
-import Reflection.Printer as Pr
-open Pr using (var;con;def;lam;pi;sort;unknown;showTerm;showType;showDef;showFunDef;showClauses)
+--import Reflection.Printer as Pr
+--open Pr using (var;con;def;lam;pi;sort;unknown;showTerm;showType;showDef;showFunDef;showClauses)
 
 -- Local "imports" to avoid depending on nplib
 private
@@ -42,28 +41,28 @@ infixr 1 _[₀→₀]_
 _[₀→₀]_ : ∀ {A : Set₀} (Aₚ : A → Set₀)
             {B : Set₀} (Bₚ : B → Set₀)
             (f : A → B) → Set₀
-_[₀→₀]_ = λ {A} Aₚ {B} Bₚ f → ∀ {a} (aₚ : Aₚ a) → Bₚ (f a)
+_[₀→₀]_ {A} Aₚ {B} Bₚ f = ∀ {a} (aₚ : Aₚ a) → Bₚ (f a)
 
 infixr 1 _[₀→₁]_
 _[₀→₁]_ : ∀ {A : Set₀} (Aₚ : A → Set₀)
             {B : Set₁} (Bₚ : B → Set₁)
             (f : A → B) → Set₁
-_[₀→₁]_ = λ {A} Aₚ {B} Bₚ f → ∀ {a} (aₚ : Aₚ a) → Bₚ (f a)
+_[₀→₁]_ {A} Aₚ {B} Bₚ f = ∀ {a} (aₚ : Aₚ a) → Bₚ (f a)
 
 infixr 1 _[₁→₁]_
 _[₁→₁]_ : ∀ {A : Set₁} (Aₚ : A → Set₁)
             {B : Set₁} (Bₚ : B → Set₁)
             (f : A → B) → Set₁
-_[₁→₁]_ = λ {A} Aₚ {B} Bₚ f → ∀ {a} (aₚ : Aₚ a) → Bₚ (f a)
+_[₁→₁]_ {A} Aₚ {B} Bₚ f = ∀ {a} (aₚ : Aₚ a) → Bₚ (f a)
 
 infixr 1 _[₁→₂]_
 _[₁→₂]_ : ∀ {A : Set₁} (Aₚ : A → Set₁)
             {B : Set₂} (Bₚ : B → Set₂)
             (f : A → B) → Set₂
-_[₁→₂]_ = λ {A} Aₚ {B} Bₚ f → ∀ {a} (aₚ : Aₚ a) → Bₚ (f a)
+_[₁→₂]_ {A} Aₚ {B} Bₚ f = ∀ {a} (aₚ : Aₚ a) → Bₚ (f a)
 
 [[Set₀]] : ([Set₀] [₁→₂] [Set₁]) [Set₀]
-[[Set₀]] = λ A → A [₀→₁] [Set₀]
+[[Set₀]] A = A [₀→₁] [Set₀]
 
 {-
 EqEnv = {!!}
@@ -94,15 +93,30 @@ t ≡-no-hints u = noHintsTerm t ≡ noHintsTerm u
 _≡-def-no-hints_ : Definition → Definition → Set
 t ≡-def-no-hints u = noHintsDefinition t ≡ noHintsDefinition u
 
+macro
+  --test-param : ∀ {a} {A : Set a} (pred : A → Set) → Term → Term → TC 𝟙
+  --test-param pred my hole = {!unify hole (def (pred my)!}
+
+  unquoteTerm : TC Term → Term → TC 𝟙
+  unquoteTerm m hole = m >>= unify hole
+
+  unquoteTermDbg : TC Term → Term → TC 𝟙
+  unquoteTermDbg m hole = m >>= λ t → typeError (termErr t ∷ [])
+
+p[Set₀]-type : TC Term
 p[Set₀]-type = param-type-by-name (ε 1) (quote [Set₀])
 p[Set₀] = param-clauses-by-name (ε 1) (quote [Set₀])
-q[[Set₀]] = definition (quote [[Set₀]]) -- quoteTerm [[Set₀]]
-test-type-p[Set₀] : ([Set₀] [₁→₂] [Set₁]) [Set₀] ≡ unquote (unEl p[Set₀]-type)
+--q[[Set₀]] = {!definition (quote [[Set₀]]) -- quoteTerm [[Set₀]]!}
+
+test-type-p[Set₀] : ([Set₀] [₁→₂] [Set₁]) [Set₀] ≡ unquoteTerm p[Set₀]-type
 test-type-p[Set₀] = refl
-test-term-p[Set₀] : quoteTerm [[Set₀]] ≡-no-hints Get-term.from-clauses p[Set₀]
-test-term-p[Set₀] = refl
-u-p[Set₀] : ([Set₀] [₁→₂] [Set₁]) [Set₀]
-unquoteDef u-p[Set₀] = p[Set₀]
+
+
+--test-term-p[Set₀] : quoteTerm [[Set₀]] ≡-no-hints {!(mapTC Get-term.from-clauses p[Set₀])!}
+--test-term-p[Set₀] = refl
+
+--u-p[Set₀] : ([Set₀] [₁→₂] [Set₁]) [Set₀]
+--unquoteDef u-p[Set₀] = param-def-by-name (ε 1) (quote [Set₀]) u-p[Set₀]
 
 False : Set₁
 False = (A : Set) → A
@@ -110,11 +124,11 @@ False = (A : Set) → A
 param1-False-type = param-type-by-name (ε 1) (quote False)
 param1-False-term = param-term-by-name (ε 1) (quote False)
 
-param1-False-type-check : [Set₁] False ≡ unquote (unEl param1-False-type)
+param1-False-type-check : [Set₁] False ≡ unquoteTerm param1-False-type
 param1-False-type-check = refl
 
-[False] : unquote (unEl param1-False-type)
-[False] = unquote param1-False-term
+[False] : unquoteTerm param1-False-type
+[False] = unquoteTerm param1-False-term
 
 [Level] : [Set₀] Level
 [Level] _ = 𝟙
@@ -233,6 +247,9 @@ module Const where
 data Wrapper (A : Set₀) : Set₀ where
   wrap : A → Wrapper A
 
+unwrap : ∀ {A} → Wrapper A → A
+unwrap (wrap a) = a
+
 idWrapper : ∀ {A} → Wrapper A → Wrapper A
 idWrapper (wrap x) = wrap x
 
@@ -262,7 +279,7 @@ module Param where
 data ⟦Wrapper⟧ : (⟦Set₀⟧ ⟦→⟧ ⟦Set₁⟧) Wrapper Wrapper
 
 private
-  ⟦Wrapper⟧-ctor = λ c → unEl (param-ctor-by-name (extDefEnv [ quote Wrapper ≔ quote ⟦Wrapper⟧ ] (ε 2)) c)
+  ⟦Wrapper⟧-ctor = param-ctor-by-name (extDefEnv [ quote Wrapper ≔ quote ⟦Wrapper⟧ ] (ε 2))
 
 data ⟦Wrapper⟧ where
   ⟦wrap⟧ : unquote (⟦Wrapper⟧-ctor (quote Wrapper.wrap))
@@ -334,6 +351,7 @@ data [Bot] {A : Set} (Aₚ : A → Set₀)
 
 -- [gobot]' = showClauses "[gobot]'" (param-rec-clauses-by-name [Bot]-env (quote gobot) (quote [gobot]'))
 
+{-
 [gobot]2 : (∀⟨ A ∶ [Set₀] ⟩[→] [Bot] A [→] A) gobot
 
 [gobot]2-clauses =
@@ -374,12 +392,12 @@ data ⟦Bot⟧ {A₀ A₁ : Set} (Aᵣ : A₀ → A₁ → Set₀)
 
 unquoteDecl ⟦gobot⟧ =
   param-rec-def-by-name ⟦Bot⟧-env (quote gobot) ⟦gobot⟧
-
+-}
 id₀ : {A : Set₀} → A → A
 id₀ x = x
 
 ⟦id₀⟧ : (∀⟨ A ∶ ⟦Set₀⟧ ⟩⟦→⟧ A ⟦→⟧ A) id₀ id₀
-⟦id₀⟧ = λ {x₁} {x₂} xᵣ {x₃} {x₄} xᵣ₁ → xᵣ₁
+⟦id₀⟧ {x₁} {x₂} xᵣ {x₃} {x₄} xᵣ₁ = xᵣ₁
 
 data List₀ (A : Set) : Set where
   []  : List₀ A
@@ -398,7 +416,14 @@ data ⟦List₀⟧ {A₀ A₁ : Set} (Aᵣ : A₀ → A₁ → Set₀) : List₀
   ⟦[]⟧  : ⟦List₀⟧ Aᵣ [] []
   _⟦∷⟧_ : (Aᵣ ⟦→⟧ ⟦List₀⟧ Aᵣ ⟦→⟧ ⟦List₀⟧ Aᵣ) _∷_ _∷_
 
-con⟦List₀⟧ = conSkip' 3
+dropAllArgs : (Args Term → Term) → Args Term → Term
+dropAllArgs f _ = f []
+
+dropArgs : ℕ → (Args Term → Term) → Args Term → Term
+dropArgs n f args = f (drop n args)
+
+con⟦List₀⟧ = dropArgs 3 ∘ conSkip' 3
+
 ⟦List₀⟧-env = record (ε 2)
   { pDef = [ quote List₀ ≔ quote ⟦List₀⟧ ] id
   ; pConP = [ quote List₀.[]  ≔ con (quote ⟦List₀⟧.⟦[]⟧)  ]
@@ -409,18 +434,32 @@ con⟦List₀⟧ = conSkip' 3
             con)
   }
 
-⟦idList₀⟧ : unquote (unEl (param-type-by-name ⟦List₀⟧-env (quote idList₀)))
--- ⟦idList₀⟧ : (∀⟨ A ∶ ⟦Set₀⟧ ⟩⟦→⟧ ⟦List₀⟧ A ⟦→⟧ ⟦List₀⟧ A) idList₀ idList₀
-unquoteDef ⟦idList₀⟧ = param-rec-clauses-by-name ⟦List₀⟧-env (quote idList₀) (quote ⟦idList₀⟧)
+⟦idList₀⟧' : (∀⟨ A ∶ ⟦Set₀⟧ ⟩⟦→⟧ ⟦List₀⟧ A ⟦→⟧ ⟦List₀⟧ A) idList₀ idList₀
+⟦idList₀⟧' {x0} {x1} xr {._} {._} ⟦[]⟧ = ⟦[]⟧
+⟦idList₀⟧' {x0} {x1} xr {._} {._} (_⟦∷⟧_ {x11} {x12} x13 {x14} {x15} x16)  =
+  ⟦idList₀⟧' {x0} {x1} xr {x14} {x15} x16
 
-{-
-⟦map₀⟧ : {x0 : Set0} → {x1 : Set0} → (x2 : (x2 : x0) → (x3 : x1) → Set0) → {x3 : Set0} → {x4 : Set0} → (x5 : (x5 : x3) → (x6 : x4) → Set0) → {x6 : (x6 : x0) → x3} → {x7 : (x7 : x1) → x4} → (x8 : {x8 : x0} → {x9 : x1} → (x10 : x2 (x8) (x9)) → x5 (x6 (x8)) (x7 (x9))) → {x9 : List₀ (x0)} → {x10 : List₀ (x1)} → (x11 : ⟦List₀⟧ {x0} {x1} (x2) (x9) (x10)) → ⟦List₀⟧ {x3} {x4} (x5) (map₀ {x0} {x3} (x6) (x9)) (map₀ {x1} {x4} (x7) (x10))
-⟦map₀⟧ {x0} {x1} (x2) {x3} {x4} (x5) {x6} {x7} (x8) {._} {._} (⟦[]⟧ )  = ⟦[]⟧
-⟦map₀⟧ {x0} {x1} (x2) {x3} {x4} (x5) {x6} {x7} (x8) {._} {._} (_⟦∷⟧_ {x11} {x12} (x13) {x14} {x15} (x16) )  = _⟦∷⟧_ {x6 (x11)} {x7 (x12)} (x8 {x11} {x12} (x13)) {map₀ {x0} {x3} (x6) (x14)} {map₀ {x1} {x4} (x7) (x15)} (⟦map₀⟧ {x0} {x1} (x2) {x3} {x4} (x5) {x6} {x7} (x8) {x14} {x15} (x16))
--}
+⟦idList₀⟧ : unquoteTerm (param-type-by-name ⟦List₀⟧-env (quote idList₀))
+-- ⟦idList₀⟧ : (∀⟨ A ∶ ⟦Set₀⟧ ⟩⟦→⟧ ⟦List₀⟧ A ⟦→⟧ ⟦List₀⟧ A) idList₀ idList₀
+unquoteDef ⟦idList₀⟧ =
+  param-def-by-name ⟦List₀⟧-env (quote idList₀) ⟦idList₀⟧
+{-  >>= λ t → getDefinition (quote ⟦idList₀⟧')
+  >>= λ d → quoteTC d
+  >>= λ qd → withNormalisation 1₂ (quoteTC t)
+  >>= λ qt → typeError (termErr qd ∷ termErr qt ∷ []) >>-}
+
+unquoteDecl ⟦idList₀⟧''' =
+  param-decl-by-name ⟦List₀⟧-env (quote idList₀) ⟦idList₀⟧'''
+
+⟦map₀⟧' : {x0 : Set0} → {x1 : Set0} → (x2 : (x2 : x0) → (x3 : x1) → Set0) → {x3 : Set0} → {x4 : Set0} → (x5 : (x5 : x3) → (x6 : x4) → Set0) → {x6 : (x6 : x0) → x3} → {x7 : (x7 : x1) → x4} → (x8 : {x8 : x0} → {x9 : x1} → (x10 : x2 (x8) (x9)) → x5 (x6 (x8)) (x7 (x9))) → {x9 : List₀ (x0)} → {x10 : List₀ (x1)} → (x11 : ⟦List₀⟧ {x0} {x1} (x2) (x9) (x10)) → ⟦List₀⟧ {x3} {x4} (x5) (map₀ {x0} {x3} (x6) (x9)) (map₀ {x1} {x4} (x7) (x10))
+⟦map₀⟧' {x0} {x1} (x2) {x3} {x4} (x5) {x6} {x7} (x8) {._} {._} (⟦[]⟧ )  = ⟦[]⟧
+⟦map₀⟧' {x0} {x1} (x2) {x3} {x4} (x5) {x6} {x7} (x8) {._} {._} (_⟦∷⟧_ {x11} {x12} (x13) {x14} {x15} (x16) )  = _⟦∷⟧_ {x3} {x4} {x5} {x6 x11} {x7 x12}
+               (x8 {x11} {x12} (x13))
+               {map₀ {x0} {x3} (x6) (x14)} {map₀ {x1} {x4} (x7) (x15)}
+               (⟦map₀⟧' {x0} {x1} (x2) {x3} {x4} (x5) {x6} {x7} (x8) {x14} {x15} (x16))
 
 unquoteDecl ⟦map₀⟧
- = param-rec-def-by-name ⟦List₀⟧-env (quote map₀) ⟦map₀⟧
+ = param-decl-by-name ⟦List₀⟧-env (quote map₀) ⟦map₀⟧
 
 {-
 map-nat : ∀ (f : ∀ {X} → List₀ X → List₀ X)
@@ -432,7 +471,7 @@ map-nat f g x = {!⟦map₀⟧ _≡_ _≡_ {g}!}
   data ⟦List₀⟧ : (⟦Set₀⟧ ⟦→⟧ ⟦Set₁⟧) List₀ List₀
 
   private
-    ⟦List₀⟧-ctor = λ c → unEl (param-ctor-by-name (extDefEnv [ quote List₀ ≔ quote ⟦List₀⟧ ] (ε 2)) c)
+    ⟦List₀⟧-ctor = param-ctor-by-name (extDefEnv [ quote List₀ ≔ quote ⟦List₀⟧ ] (ε 2))
 
   data ⟦List₀⟧ where
     ⟦[]⟧  : unquote (⟦List₀⟧-ctor (quote List₀.[]))
@@ -517,28 +556,28 @@ revealed-[→] = Reveal-args.nåme (quote _[₀→₀]_)
 revealed-[→]' : ∀ (A : Set₀) (Aₚ : A → Set₀)
                   (B : Set₀) (Bₚ : B → Set₀)
                   (f : A → B) → Set₀
-unquoteDef revealed-[→]' = Get-clauses.from-def revealed-[→]
+unquoteDef revealed-[→]' = revealed-[→] >>= defineFun revealed-[→]' ∘ Get-clauses.from-def
 
 revelator-[→] : ({A : Set} (Aₚ : A → Set) {B : Set} (Bₚ : B → Set) (f : A → B) → Set)
               →  (A : Set) (Aₚ : A → Set) (B : Set) (Bₚ : B → Set) (f : A → B) → Set
-unquoteDef revelator-[→] = Revelator.clauses (type (quote _[₀→₀]_))
+unquoteDef revelator-[→] = revelator-by-name (quote _[₀→₀]_) revelator-[→]
 
-p-[→]-type = param-type-by-name    (ε 1) (quote _[₀→₀]_)
-p-[→]      = param-clauses-by-name (ε 1) (quote _[₀→₀]_)
+p-[→]-Type : Set₁
+p-[→]-Type = unquoteTerm (param-type-by-name (ε 1) (quote _[₀→₀]_))
 
-p-[→]' = ∀ {A : Set₀}       (A₀ₚ : A → Set₀)
-           {Aₚ : A → Set₀}  (A₁ₚ : {x : A} → A₀ₚ x → Aₚ x → Set₀)
-           {B : Set₀}       (B₀ₚ : B → Set₀)
-           {Bₚ : B → Set₀}  (B₁ₚ : {x : B} → B₀ₚ x → Bₚ x → Set₀)
-           {f : A → B}      (fₚ : {x : A} → A₀ₚ x → B₀ₚ (f x))
-         → (Aₚ [₀→₀] Bₚ) f
-         → Set
+p-[→]-Type' = ∀ {A : Set₀}       (A₀ₚ : A → Set₀)
+                {Aₚ : A → Set₀}  (A₁ₚ : {x : A} → A₀ₚ x → Aₚ x → Set₀)
+                {B : Set₀}       (B₀ₚ : B → Set₀)
+                {Bₚ : B → Set₀}  (B₁ₚ : {x : B} → B₀ₚ x → Bₚ x → Set₀)
+                {f : A → B}      (fₚ : {x : A} → A₀ₚ x → B₀ₚ (f x))
+              → (Aₚ [₀→₀] Bₚ) f
+              → Set
 
-p-[→]'-test : p-[→]' ≡ unquote (unEl p-[→]-type)
+p-[→]'-test : p-[→]-Type' ≡ p-[→]-Type
 p-[→]'-test = refl
 
-[[→]] : unquote (unEl p-[→]-type)
-unquoteDef [[→]] = p-[→]
+[[→]] : p-[→]-Type
+unquoteDef [[→]] = param-def-by-name (ε 1) (quote _[₀→₀]_) [[→]]
 
 data [[ℕ]] : [[Set₀]] [ℕ] [ℕ] where
   [[zero]] : [[ℕ]] [zero] [zero]
@@ -558,13 +597,31 @@ _+ℕ_ : ℕ → ℕ → ℕ
 zero  +ℕ n = n
 suc m +ℕ n = suc (m +ℕ n)
 
+id' : {n : ℕ} → ℕ → ℕ
+id' = λ n → n
+
+⟦id'⟧ : (∀⟨ n ∶ ⟦ℕ⟧ ⟩⟦→⟧ ⟦ℕ⟧ ⟦→⟧ ⟦ℕ⟧) (λ {n} → id' {n}) (λ {n} → id' {n})
+unquoteDef ⟦id'⟧ = param-def-by-name defEnv2 (quote id') ⟦id'⟧
+
+{-
+-- u = {!unquoteTerm (typeError (termErr (quoteTerm ⟦id'⟧) ∷ []))!}
+
 pred' : ℕ → ℕ
 pred' = λ { zero    → zero
           ; (suc m) → m }
 
-⟦pred'⟧ : (⟦ℕ⟧ ⟦→⟧ ⟦ℕ⟧) pred' pred'
-unquoteDef ⟦pred'⟧ = param-clauses-by-name defEnv2 (quote pred')
+⟦pred'⟧-ref : Wrapper ((⟦ℕ⟧ ⟦→⟧ ⟦ℕ⟧) pred' pred')
+⟦pred'⟧-ref  = wrap (λ { {_} {_} ⟦zero⟧    → ⟦zero⟧ ; {_} {_} (⟦suc⟧ m) → m })
 
+
+-- unquoteDecl ⟦pred'⟧ = param-decl-by-name defEnv2 (quote pred') ⟦pred'⟧
+
+⟦pred'⟧ : (⟦ℕ⟧ ⟦→⟧ ⟦ℕ⟧) pred' pred'
+unquoteDef ⟦pred'⟧ = param-def-by-name-dbg defEnv2 (quote pred') ⟦pred'⟧
+-- ⟦pred'⟧ {x} {y} = (unquoteTerm (param-term-by-name defEnv2 (quote pred'))) {x} {y}
+-- ⟦pred'⟧ {x} {y} = unwrap ⟦pred'⟧-ref {x} {y}
+
+{-
 _⟦+ℕ⟧_ : (⟦ℕ⟧ ⟦₀→₀⟧ ⟦ℕ⟧ ⟦₀→₀⟧ ⟦ℕ⟧) _+ℕ_ _+ℕ_
 ⟦zero⟧  ⟦+ℕ⟧ n = n
 ⟦suc⟧ m ⟦+ℕ⟧ n = ⟦suc⟧ (m ⟦+ℕ⟧ n)
@@ -584,7 +641,8 @@ _⟦+ℕ⟧_ : (⟦ℕ⟧ ⟦₀→₀⟧ ⟦ℕ⟧ ⟦₀→₀⟧ ⟦ℕ⟧) _
 test-⟦⟦Set₀⟧⟧ : quoteTerm ⟦⟦Set₀⟧⟧ ≡-no-hints quoteTerm ⟦⟦Set₀⟧⟧'
 test-⟦⟦Set₀⟧⟧ = refl
 
-⟦⟦Set₀⟧⟧-type = unquote (unEl (type (quote ⟦⟦Set₀⟧⟧)))
+{-
+⟦⟦Set₀⟧⟧-type = unquote (type (quote ⟦⟦Set₀⟧⟧))
 test-⟦⟦Set₀⟧⟧-type : ⟦⟦Set₀⟧⟧-type ≡ unquote (unEl (type (quote ⟦⟦Set₀⟧⟧')))
 test-⟦⟦Set₀⟧⟧-type = refl
 

@@ -1,4 +1,4 @@
-{-# OPTIONS --without-K #-}
+-- {-# OPTIONS --without-K #-}
 module Reflection.NP where
 
 open import Level
@@ -8,14 +8,14 @@ open import Data.Nat
 open import Data.List
 open import Agda.Builtin.Unit using (⊤)
 open import Agda.Builtin.String using (String)
-open import Data.Maybe renaming (map to map?)
+open import Data.Maybe hiding (_>>=_) renaming (map to map?)
 open import Data.Vec.N-ary using (N-ary; N-ary-level)
 open import Function
 
 open import Reflection public
 
 mapTC : ∀ {a b} {A : Set a} {B : Set b} → (A → B) → TC A → TC B
-mapTC f m = bindTC m (λ x -> returnTC (f x))
+mapTC f m = m >>= λ x -> return (f x)
 
 -- Local "imports" to avoid depending on nplib
 private
@@ -25,9 +25,6 @@ private
   postulate
     opaque : ∀ {a b} {A : Set a} {B : Set b} → A → B → B
     -- opaque-rule : ∀ {x} y → opaque x y ≡ y
-
-Args : Set
-Args = List (Arg Term)
 
 -- lamᵛ : String → Term → Term
 pattern lamᵛ s t = lam visible (abs s t)
@@ -78,9 +75,9 @@ pattern defʰʳ n t = def n (argʰʳ t ∷ [])
 Arg-infos : Set
 Arg-infos = List Arg-info
 
-app` : (Args → Term) → (ais : Arg-infos) → Term →⟨ length ais ⟩ Term
+app` : (Args Term → Term) → (ais : Arg-infos) → Term →⟨ length ais ⟩ Term
 app` f = go [] where
-  go : Args → (ais : Arg-infos) → Term →⟨ length ais ⟩ Term
+  go : Args Term → (ais : Arg-infos) → Term →⟨ length ais ⟩ Term
   go args []         = f (reverse args)
   go args (ai ∷ ais) = λ t → go (arg ai t ∷ args) ais
 
@@ -205,19 +202,20 @@ module _ (Γ : MapVar) where
     mapVarPattern (proj p) = proj (onPrj Γ p)
     mapVarPattern absurd = absurd
 
-mapVarTerm    : MapVar → Term → Term
-mapVarArgs    : MapVar → Args → Args
-mapVarSort    : MapVar → Sort → Sort
-mapVarAbsTerm : MapVar → Abs Term → Abs Term
-mapVarClause  : MapVar → Clause → Clause
-mapVarClauses : MapVar → Clauses → Clauses
+mapVarTerm     : MapVar → Term → Term
+mapVarArgsTerm : MapVar → Args Term → Args Term
+mapVarArgsName : MapVar → Args Name → Args Name
+mapVarSort     : MapVar → Sort → Sort
+mapVarAbsTerm  : MapVar → Abs Term → Abs Term
+mapVarClause   : MapVar → Clause → Clause
+mapVarClauses  : MapVar → Clauses → Clauses
 
-mapVarTerm Γ (var x args)  = var (onVar Γ x)   (mapVarArgs Γ args)
-mapVarTerm Γ (con c args)  = con (onCon Γ c)   (mapVarArgs Γ args)
-mapVarTerm Γ (def d args)  = def (onDef Γ d)   (mapVarArgs Γ args)
-mapVarTerm Γ (meta m args) = meta (onMeta Γ m) (mapVarArgs Γ args)
+mapVarTerm Γ (var x args)  = var (onVar Γ x)   (mapVarArgsTerm Γ args)
+mapVarTerm Γ (con c args)  = con (onCon Γ c)   (mapVarArgsTerm Γ args)
+mapVarTerm Γ (def d args)  = def (onDef Γ d)   (mapVarArgsTerm Γ args)
+mapVarTerm Γ (meta m args) = meta (onMeta Γ m) (mapVarArgsTerm Γ args)
 mapVarTerm Γ (lam v t) = lam v (mapVarAbsTerm Γ t)
-mapVarTerm Γ (pat-lam cs args) = pat-lam (mapVarClauses Γ cs) (mapVarArgs Γ args)
+mapVarTerm Γ (pat-lam cs args) = pat-lam (mapVarClauses Γ cs) (mapVarArgsTerm Γ args)
 mapVarTerm Γ (pi (arg i t₁) t₂) = pi (arg i (mapVarTerm Γ t₁)) (mapVarAbsTerm Γ t₂)
 mapVarTerm Γ (sort x) = sort (mapVarSort Γ x)
 mapVarTerm Γ (lit x) = lit x
@@ -231,8 +229,11 @@ mapVarClauses Γ (c ∷ cs) = mapVarClause Γ c ∷ mapVarClauses Γ cs
 
 mapVarAbsTerm Γ (abs s x) = abs (onStr Γ s) (mapVarTerm (mapVar↑ Γ) x)
 
-mapVarArgs Γ [] = []
-mapVarArgs Γ (arg i x ∷ args) = arg i (mapVarTerm Γ x) ∷ mapVarArgs Γ args
+mapVarArgsTerm Γ [] = []
+mapVarArgsTerm Γ (arg i x ∷ args) = arg i (mapVarTerm Γ x) ∷ mapVarArgsTerm Γ args
+
+mapVarArgsName Γ [] = []
+mapVarArgsName Γ (arg i x ∷ args) = arg i (onPrj Γ x) ∷ mapVarArgsName Γ args
 
 mapVarSort Γ (set t) = set (mapVarTerm Γ t)
 mapVarSort Γ (lit n) = lit n
@@ -242,7 +243,7 @@ module _ (Γ : MapVar) where
   mapVarDefinition : Definition → Definition
   mapVarDefinition (function cs) = function (mapVarClauses Γ cs)
   mapVarDefinition (data-type pars cs) = data-type pars cs
-  mapVarDefinition (record′ x) = record′ x
+  mapVarDefinition (record′ x args) = record′ x (mapVarArgsName Γ args)
   mapVarDefinition (constructor′ x) = constructor′ x
   mapVarDefinition axiom = axiom
   mapVarDefinition primitive′ = primitive′
@@ -253,8 +254,8 @@ raiseMapVar k = liftMapVar (_+_ k)
 raiseTerm : ℕ → Term → Term
 raiseTerm = mapVarTerm ∘ raiseMapVar
 
-raiseArgs : ℕ → Args → Args
-raiseArgs = mapVarArgs ∘ raiseMapVar
+raiseArgs : ℕ → Args Term → Args Term
+raiseArgs = mapVarArgsTerm ∘ raiseMapVar
 
 noHintsMapVar : MapVar
 noHintsMapVar = record idMapVar { onStr = const "_" }
@@ -301,19 +302,19 @@ t `→ᵛʳ u = `Πᵛʳ t (noAbsTerm u)
 
 -- η vs mk: performs no shifting of the result of mk.
 -- Safe values of mk are def and con for instance
-η : List Arg-info → (Args → Term) → Term
+η : List Arg-info → (Args Term → Term) → Term
 η ais₀ mk = go ais₀ where
-  vars : List Arg-info → Args
+  vars : List Arg-info → Args Term
   vars []         = []
   vars (ai ∷ ais) = arg ai (var (length ais) []) ∷ vars ais
   go : List Arg-info → Term
   go []                   = mk (vars ais₀)
   go (arg-info v _ ∷ ais) = lam v (abs "_" (go ais))
 
-ηʰ : ℕ → (Args → Term) → Term
+ηʰ : ℕ → (Args Term → Term) → Term
 ηʰ n = η (replicate n argiʰʳ)
 
-ηᵛ : ℕ → (Args → Term) → Term
+ηᵛ : ℕ → (Args Term → Term) → Term
 ηᵛ n = η (replicate n argiᵛʳ)
 
 ηʰⁿ : ℕ → Name → Term
@@ -366,7 +367,7 @@ abs' _ [] = []
 abs' s x  = abs s x
 
 absTerm : Term → AbsTerm
-absArgs : Args → AbsTerm
+absArgs : Args Term → AbsTerm
 absSort : Sort → AbsTerm
 
 absTerm (var  x args) = var x ,, absArgs args
@@ -387,7 +388,7 @@ absSort (set t) = absTerm t
 absSort (lit n) = []
 absSort unknown = []
 
-app : Term → Args → Term
+app : Term → Args Term → Term
 app (var  x args) args₁ = var  x (args ++ args₁)
 app (con  c args) args₁ = con  c (args ++ args₁)
 app (def  f args) args₁ = def  f (args ++ args₁)
@@ -431,7 +432,7 @@ module Map-arg-info (f : Arg-info → Arg-info) where
     pats (arg i p ∷ ps) = arg (f i) (pat p) ∷ pats ps
 
     term : On Term
-    årgs : On Args
+    årgs : On (Args Term)
     sørt : On Sort
     clåuse  : On Clause
     clåuses : On (List Clause)
@@ -463,7 +464,7 @@ module Map-arg-info (f : Arg-info → Arg-info) where
     dëf : Definition → Definition
     dëf (function cs) = function (clåuses cs)
     dëf (data-type pars cs) = opaque "Map-arg-info.dëf/data-type" unknown-definition
-    dëf (record′ x) = opaque "Map-arg-info.dëf/record′" unknown-definition
+    dëf (record′ _ _) = opaque "Map-arg-info.dëf/record′" unknown-definition
     dëf (constructor′ x) = opaque "Map-arg-info.dëf/constructor′" unknown-definition
     dëf axiom = opaque "Map-arg-info.dëf/axiom" unknown-definition
     dëf primitive′ = opaque "Map-arg-info.dëf/primitive′" unknown-definition
@@ -480,7 +481,7 @@ module Get-clauses where
     from-def : Definition → Clauses
     from-def (function cs) = cs
     from-def (data-type pars cs) = opaque "Get-clauses.from-def/data-type" []
-    from-def (record′ x) = opaque "Get-clauses.from-def/record′" []
+    from-def (record′ _ _) = opaque "Get-clauses.from-def/record′" []
     from-def (constructor′ x) = opaque "Get-clauses.from-def/constructor′" []
     from-def axiom = opaque "Get-clauses.from-def/axiom" []
     from-def primitive′ = opaque "Get-clauses.from-def/primitive′" []
@@ -502,7 +503,7 @@ module Get-term where
     from-def : Definition → Term
     from-def (function cs) = from-clauses cs
     from-def (data-type pars cs) = unknown
-    from-def (record′ x) = unknown
+    from-def (record′ _ _) = unknown
     from-def (constructor′ x) = unknown
     from-def axiom = unknown
     from-def primitive′ = unknown
@@ -518,7 +519,7 @@ module Revelator (tyH : Type) where
     tyE = Reveal-args.term tyH
     tyF : Type
     tyF = tyH `→ᵛʳ tyE
-    tm : Term → ℕ → Args → Term
+    tm : Term → ℕ → Args Term → Term
     tm (pi (arg i t₁) (abs s t₂)) y args
       = lamᵛ s (tm t₂ (suc y) (raiseArgs 1 args ++ arg i (var 0 []) ∷ []))
     tm (var x  args) = var

@@ -1,10 +1,14 @@
-{-# OPTIONS --without-K #-}
+{-# OPTIONS --with-K #-}
 open import Function
+open import Data.Unit renaming (⊤ to 𝟙; tt to 0₁)
+open import Data.Bool
+  using    (not)
+  renaming (Bool to 𝟚; false to 0₂; true to 1₂)
 open import Data.Nat hiding (_≟_)
 open import Data.Nat.Show renaming (show to showNat)
 open import Data.Fin using (Fin; zero; suc) renaming (toℕ to Fin▹ℕ)
 open import Data.Vec using (Vec; []; _∷_; replicate; tabulate; allFin; reverse; _⊛_; toList) renaming (map to vmap)
-open import Data.List using (List; []; _∷_; _++_)
+open import Data.List using (List; []; _∷_; _++_; map)
 open import Data.String  using (String) renaming (_++_ to _++ˢ_)
 open import Reflection.NP
 open import Relation.Nullary
@@ -132,9 +136,9 @@ EnvPat = ∀ {n} → Env' n → Env' n
 pEnvPats : Pats    → EnvPat
 pEnvPat  : Pattern → EnvPat
 
-pEnvPat (con _ pats) = pEnvPats pats ∘ _+ʷ
+pEnvPat (con _ pats) = pEnvPats pats -- ∘ _+ʷ -- WRONG but try _+ʷ ∘ pEnvPats pats
 pEnvPat (var _)      = _+↑ -- _+1
-pEnvPat dot          = id -- WRONG
+pEnvPat dot          = opaque "pEnvPats/dot" id -- WRONG
 pEnvPat (lit _)      = id
 pEnvPat (proj _)     = opaque "pEnvPats/proj" id
 pEnvPat absurd       = id
@@ -181,10 +185,10 @@ pLit (nat n) = pNat n
 pLit _       = con (quote refl) []
 
 module _ {n} where
-    pTerm    : (Γ : Env' n) → Term    → Term
-    pArgs    : (Γ : Env' n) → Args    → Args
-    pClause  : (Γ : Env' n) → Clause  → Clause
-    pClauses : (Γ : Env' n) → Clauses → Clauses
+    pTerm    : (Γ : Env' n) → Term      → Term
+    pArgs    : (Γ : Env' n) → Args Term → Args Term
+    pClause  : (Γ : Env' n) → Clause    → Clause
+    pClauses : (Γ : Env' n) → Clauses   → Clauses
     pTerm∈   : (Γ : Env' n) → Term                     → Vec Term n → Term
     pPi∈     : (Γ : Env' n) → String → Arg Type → Type → Vec Term n → Term
 
@@ -255,6 +259,22 @@ module _ (k : ℕ) {n} (Γ : Env' n) where
 
 param-rec-clauses-by-name : ∀ {n} → Env' n → (x xₚ : Name) → TC Clauses
 param-rec-clauses-by-name Γ x xₚ = param-clauses-by-name (extDefEnv [ x ≔ xₚ ] Γ) x
+
+param-def-by-name-dbg : ∀ {n} → Env' n → (x xₚ : Name) → TC 𝟙
+param-def-by-name-dbg Γ x xₚ =
+  param-rec-clauses-by-name Γ x xₚ >>= λ cs →
+  withNormalisation 1₂ (quoteTC cs) >>= λ qcs → typeError (termErr qcs ∷ [])
+
+param-def-by-name : ∀ {n} → Env' n → (x xₚ : Name) → TC 𝟙
+param-def-by-name Γ x xₚ =
+  param-rec-clauses-by-name Γ x xₚ >>= λ cs →
+  defineFun xₚ cs
+
+param-decl-by-name : ∀ {n} → Env' n → (x xₚ : Name) → TC 𝟙
+param-decl-by-name Γ x xₚ =
+  param-type-by-name Γ x >>= λ t →
+  declareDef (argᵛʳ xₚ) t >>
+  param-def-by-name Γ x xₚ
 
 param-ctor-by-name : ∀ {n} → Env' n → (c : Name) → TC Type
 param-ctor-by-name Γ c = mapTC (pType Γ (con c [])) (getType c)

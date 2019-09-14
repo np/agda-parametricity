@@ -1,4 +1,4 @@
-{-# OPTIONS --without-K #-}
+{-# OPTIONS --with-K #-}
 module Reflection.Param.Env where
 
 open import Data.Nat using (ℕ; zero; suc; _+_; _∸_; _*_)
@@ -22,7 +22,7 @@ record Env (w : ℕ)(A B : Set) : Set where
   field
     pVarᵢ : Fin w → A → B
     pVarᵣ : A → B
-    pConT : Name → Args → Term
+    pConT : Name → Args Term → Term
     pConP : Name → Pats → Pattern
     pDef  : Name → Name
 open Env public
@@ -56,15 +56,15 @@ extConEnv ext Γ = record Γ { pCon = ext (pCon Γ) }
 ↑pVar zero = id
 ↑pVar (suc n) = ↑pVar n ∘ mapVar↑'
 
-liftConT : (Name → Name) → Name → Args → Term
+liftConT : (Name → Name) → Name → Args Term → Term
 liftConP : (Name → Name) → Name → Pats → Pattern
 liftConT f = con ∘ f
 liftConP f = con ∘ f
 
-conSkip : List Visibility → Name → Args → Term
+conSkip : List Visibility → Name → Args Term → Term
 conSkip vs c args = con c (map (λ v → argʳ v unknown) vs ++ args)
 
-conSkip' : ℕ → Name → Args → Term
+conSkip' : ℕ → Name → Args Term → Term
 conSkip' k = conSkip (replicate k hidden)
 
 on-pVar : ∀ {w A B C D}
