@@ -17,7 +17,7 @@ data [Maybe] {a p} {A : Set a} (Aₚ : A → Set p) : Maybe A → Set (a ⊔ p) 
 [maybe] _ _ justₚ nothingₚ ([just] xₚ) = justₚ xₚ
 [maybe] _ _ justₚ nothingₚ [nothing]   = nothingₚ
 
-[map?] : ∀ {a b} → (∀⟨ Aₚ ∶ [Set] a ⟩[→] ∀⟨ Bₚ ∶ [Set] b ⟩[→] (Aₚ [→] Bₚ) [→] [Maybe] Aₚ [→] [Maybe] Bₚ) (map? {a} {b})
+[map?] : ∀ {a b} → (∀⟨ Aₚ ∶ [Set] a ⟩[→] ∀⟨ Bₚ ∶ [Set] b ⟩[→] (Aₚ [→] Bₚ) [→] [Maybe] Aₚ [→] [Maybe] Bₚ) (map? {a} {_} {b})
 [map?] _ _ fₚ ([just] xₚ) = [just] (fₚ xₚ)
 [map?] _ _ fₚ [nothing]   = [nothing]
 
