@@ -28,9 +28,13 @@
           # Declare dependencies - mkDerivation makes these available during build
           buildInputs = [ pkgs.agdaPackages.standard-library ];
 
-          # The default buildPhase runs: agda --build-library
-          # This automatically builds all modules listed in the .agda-lib
-          # No need to override unless custom build steps are required
+          # Override buildPhase to only build parametricity.agda instead of all files
+          # This avoids building experimental modules like Reflection.Param.Tests
+          buildPhase = ''
+            runHook preBuild
+            agda parametricity.agda
+            runHook postBuild
+          '';
 
           meta = with pkgs.lib; {
             description = "Deriving parametricity results in Agda: theorems for free";
