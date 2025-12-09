@@ -1,3 +1,0 @@
-#!/bin/bash -eu
-gup -u agda-parametricity.agda
-exec agda-pkg -cagda-pkg.conf agda-parametricity.agda

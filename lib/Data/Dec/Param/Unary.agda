@@ -1,6 +1,7 @@
 {-# OPTIONS --without-K #-}
 open import Level
-open import Relation.Nullary
+open import Relation.Nullary hiding (yes; no)
+open import Relation.Nullary as RN using (yes; no)
 open import Relation.Binary
 
 open import Function.Param.Unary
@@ -10,8 +11,8 @@ open import Data.Zero.Param.Unary
 module Data.Dec.Param.Unary where
 
 data [Dec] {p pₚ} {P : Set p} (Pₚ : P → Set pₚ) : [Set] (p ⊔ pₚ) (Dec P) where
-  yes : ∀ {p : P}    (pₚ : Pₚ p) → [Dec] Pₚ (yes p)
-  no  : ∀ {¬p : ¬ P} (¬pₚ : ([¬] Pₚ) ¬p) → [Dec] Pₚ (no ¬p)
+  [yes] : ∀ {p : P}    (pₚ : Pₚ p) → [Dec] Pₚ (RN.yes p)
+  [no]  : ∀ {¬p : ¬ P} (¬pₚ : ([¬] Pₚ) ¬p) → [Dec] Pₚ (RN.no ¬p)
 
 private
   [Dec]' : ∀ {p} → [Pred] {p} p ([Set] p) Dec

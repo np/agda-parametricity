@@ -4,3 +4,9 @@
 .\#*
 .gup/
 *.swp
+
+# Nix
+result
+result-*
+.direnv/
+.vscode/

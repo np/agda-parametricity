@@ -1,4 +1,4 @@
-{-# OPTIONS --with-K #-}
+{-# OPTIONS --without-K #-}
 open import Function
 open import Data.Unit renaming (⊤ to 𝟙; tt to 0₁)
 open import Data.Bool
@@ -10,6 +10,7 @@ open import Data.Fin using (Fin; zero; suc) renaming (toℕ to Fin▹ℕ)
 open import Data.Vec using (Vec; []; _∷_; replicate; tabulate; allFin; reverse; _⊛_; toList) renaming (map to vmap)
 open import Data.List using (List; []; _∷_; _++_; map)
 open import Data.String  using (String) renaming (_++_ to _++ˢ_)
+open import Agda.Builtin.Reflection -- using (Visibility; Pattern)
 open import Reflection.NP
 open import Relation.Nullary
 open import Relation.Binary.PropositionalEquality using (_≡_; refl)
@@ -22,8 +23,8 @@ module Reflection.Param where
 -- Local "imports" to avoid depending on nplib
 private
   postulate
-    opaque : ∀ {a b} {A : Set a} {B : Set b} → A → B → B
-    -- opaque-rule : ∀ {x} y → opaque x y ≡ y
+    hide : ∀ {a b} {A : Set a} {B : Set b} → A → B → B
+    -- hide-rule : ∀ {x} y → hide x y ≡ y
 
   Endo : Set → Set
   Endo A = A → A
@@ -86,9 +87,9 @@ hintₖ' : ℕ → String → String
 hintₖ' k s = hintₖ s ++ˢ showNat k
 
 -- Add 'n' hidden args then one visible arg, then the rest of given args
-pArgs^ : ∀ {n A} → Arg-info → (Fin n → A) → A → List (Arg A) → List (Arg A)
-pArgs^ (arg-info v r) f x args =
-  app-tabulate (argʰ r ∘ f) --<-- to be synced with pEnvPat +1/+↑
+pArgs^ : ∀ {n} {A : Set} → ArgInfo → (Fin n → A) → A → List (Arg A) → List (Arg A)
+pArgs^ (arg-info v (modality r _)) f x args =
+  app-tabulate (arg (argiʰω r) ∘ f) --<-- to be synced with pEnvPat +1/+↑
     (argʳ (target-visibility v) x ∷ args)
 
 p^lam : Visibility → String → ℕ → Term → Term
@@ -97,10 +98,10 @@ p^lam v s n t = lam^ n (hintᵢ s) hidden
 
 module _ {n} (Γ : Env' n) where
     pPi∈ⁿ : ∀ (s     : String)
-              (i     : Arg-info)
+              (i     : ArgInfo)
               (ty    : Type)
               (t₀ t₁ : Env' n → Vec Term n → Type) → Term
-    pPi∈ⁿ s (arg-info v r) ty t₀ t₁ = go Γ 0 (allFin n)
+    pPi∈ⁿ s (arg-info v (modality r _)) ty t₀ t₁ = go Γ 0 (allFin n)
       where
       -- Add 'n' hidden arguments and one visible argument
       -- for the relation between the 'n' firsts.
@@ -109,7 +110,7 @@ module _ {n} (Γ : Env' n) where
           `Π (argʳ (target-visibility v) (t₀ Δ (allVarsFrom n 0)))
              (abs (hintᵣ s) (t₁ (Γ +↑) (allVarsFrom n 1)))
       go Δ k (i ∷ is) =
-          `Π (argʰ r (mapTermVarᵢ Δ i ty))
+          `Π (arg (argiʰω r) (mapTermVarᵢ Δ i ty))
              (abs (hintᵢ' k s) (go (Δ +1) (suc k) is))
 
 pAppⁿ : ∀ n (v : Visibility)(a tᵢ : Term) → Term
@@ -123,7 +124,7 @@ pSort∈ : ∀ {n} → Sort → Vec Term n → Type
 pSort∈ s = go 0
   where
     go : ℕ → ∀ {n} → Vec Term n → Type
-    go k []       = sort s
+    go k []       = agda-sort s
     go k (t ∷ ts) = `Πᵛʳ (raiseTerm k t)
                          (abs (hintₖ' k "A") (go (suc k) ts))
 
@@ -138,10 +139,10 @@ pEnvPat  : Pattern → EnvPat
 
 pEnvPat (con _ pats) = pEnvPats pats -- ∘ _+ʷ -- WRONG but try _+ʷ ∘ pEnvPats pats
 pEnvPat (var _)      = _+↑ -- _+1
-pEnvPat dot          = opaque "pEnvPats/dot" id -- WRONG
+pEnvPat (dot t)      = hide "pEnvPats/dot" id -- WRONG
 pEnvPat (lit _)      = id
-pEnvPat (proj _)     = opaque "pEnvPats/proj" id
-pEnvPat absurd       = id
+pEnvPat (proj _)     = hide "pEnvPats/proj" id
+pEnvPat (absurd n)   = id
 
 pEnvPats [] = id
 pEnvPats (arg i p ∷ ps) = pEnvPats ps ∘ pEnvPat p
@@ -149,23 +150,23 @@ pEnvPats (arg i p ∷ ps) = pEnvPats ps ∘ pEnvPat p
 module _ {n} (Γ : Env' n) where
     PPat = Endo Pats
 
-    pPatCon : Arg-info → Name → Pattern → Pats → PPat
+    pPatCon : ArgInfo → Name → Pattern → Pats → PPat
     pPatCon i c p pats
       = pArgs^ {n} i (const p) (pConP Γ c pats)
 
-    pPatℕ : Arg-info → ℕ → PPat
-    pPatℕ i zero    = pPatCon i (quote ℕ.zero) dot []
-    pPatℕ i (suc l) = pPatCon i (quote ℕ.suc)  dot (pPatℕ i l [])
+    pPatℕ : ArgInfo → ℕ → PPat
+    pPatℕ i zero    = pPatCon i (quote ℕ.zero) (dot unknown) []
+    pPatℕ i (suc l) = pPatCon i (quote ℕ.suc)  (dot unknown) (pPatℕ i l [])
 
     pPats : Pats        → PPat
     pPat  : Arg Pattern → PPat
 
     pPat (arg i (con c pats))
-      = pPatCon i c dot (pPats pats [])
-    pPat (arg i dot)
-      = pArgs^ {n} i (const dot) dot
-    pPat (arg i (var s))
-      = pArgs^ {n} i (λ j → var (hintᵢ' (Fin▹ℕ j) s)) (var (hintᵣ s))
+      = pPatCon i c (dot unknown) (pPats pats [])
+    pPat (arg i (dot t))
+      = pArgs^ {n} i (const (dot unknown)) (dot unknown)
+    pPat (arg i (var x))
+      = pArgs^ {n} i (λ j → var (Fin▹ℕ j)) (var x)
     pPat (arg i (lit (nat n)))
       = pPatℕ i n
     pPat (arg i (lit l))
@@ -173,9 +174,9 @@ module _ {n} (Γ : Env' n) where
           where
             pLitArg : ∀ {n} → Fin n → Pattern
             pLitArg zero    = lit l
-            pLitArg (suc _) = dot
-    pPat (arg i absurd)   = pArgs^ {n} i (const (var "_")) absurd
-    pPat (arg i (proj p)) = opaque "pPat/proj" id
+            pLitArg (suc _) = dot unknown
+    pPat (arg i (absurd x))   = pArgs^ {n} i (const (lit (nat 42))) (absurd x) -- TODO fix 42
+    pPat (arg i (proj p)) = hide "pPat/proj" id
 
     pPats []         = id
     pPats (pat ∷ ps) = pPat pat ∘ pPats ps
@@ -197,7 +198,7 @@ module _ {n} where
     pTerm Γ (con  c args)     = pConT Γ c (pArgs Γ args)
     pTerm Γ (def  d args)     = def (pDef Γ d) (pArgs Γ args)
     pTerm Γ (lit l)           = pLit l
-    pTerm Γ (sort s)          = lam∈ "Aₖ" Γ λ _ → pSort∈ s
+    pTerm Γ (agda-sort s)          = lam∈ "Aₖ" Γ λ _ → pSort∈ s
     pTerm Γ (pi t (abs s u))  = lam∈ (hintₖ s) Γ λ Δ → pPi∈ Δ s t u
     pTerm Γ (pat-lam cs args) = pat-lam (pClauses Γ cs) (pArgs Γ args)
     pTerm Γ (meta m args)     = unknown -- ??? newMeta λ m → meta m (pArgs Γ args)
@@ -208,7 +209,7 @@ module _ {n} where
         pTerm∈ Δ u
           (vmap (pAppⁿ n v) as ⊛ vs)
 
-    pTerm∈ Γ (sort s)         = pSort∈ s
+    pTerm∈ Γ (agda-sort s)         = pSort∈ s
     pTerm∈ Γ (pi t (abs s u)) = pPi∈ Γ s t u
     pTerm∈ Γ t                = app (pTerm Γ t) ∘ toList ∘ vmap argᵛʳ -- <--- visible ?
 
@@ -216,19 +217,19 @@ module _ {n} where
     pArgs Γ (arg i t ∷ as)
       = pArgs^ i (λ i → mapTermVarᵢ Γ i t) (pTerm Γ t) (pArgs Γ as)
 
-    pClause Γ (clause pats body)   = clause (pPats Γ pats []) (pTerm (pEnvPats pats Γ) body)
-    pClause Γ (absurd-clause pats) = absurd-clause (pPats Γ pats [])
+    pClause Γ (clause tel pats body)   = clause tel (pPats Γ pats []) (pTerm (pEnvPats pats Γ) body)
+    pClause Γ (absurd-clause tel pats) = absurd-clause tel (pPats Γ pats [])
 
     pClauses Γ []       = []
     pClauses Γ (c ∷ cs) = pClause Γ c ∷ pClauses Γ cs
 
 module _ {n} (Γ : Env' n) where
     pType : (t : Term) (typeof-t : Type) → Type
-    pType t typeof-t = pTerm∈ Γ typeof-t (replicate t)
+    pType t typeof-t = pTerm∈ Γ typeof-t (replicate n t)
 
     pDefinitionClauses : Definition → Clauses
     pDefinitionClauses (function cs) = pClauses Γ cs
-    pDefinitionClauses _ = opaque "pDefinitionClauses" []
+    pDefinitionClauses _ = hide "pDefinitionClauses" []
 
     param-type-by-name : Name → TC Type
     param-type-by-name d = mapTC (pType (def d [])) (getType d)

@@ -1,7 +1,0 @@
-#!/bin/bash -eu
-echo "module agda-parametricity where" >$1
-git ls-files lib |
-  grep -v '^agda-parametricity.agda$' |
-  grep '\.agda$' |
-  sed -e 's|lib/\(.*\)\.agda|import \1|' |
-  tr / . >>$1

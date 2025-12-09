@@ -1,6 +1,6 @@
 {-# OPTIONS --without-K #-}
 open import Level
-open import Algebra.FunctionProperties
+open import Algebra.Core using (Op₁; Op₂)
 open import Relation.Nullary
 open import Relation.Binary
 

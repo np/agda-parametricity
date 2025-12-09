@@ -1,4 +1,4 @@
-{-# OPTIONS --with-K #-}
+{-# OPTIONS --without-K #-}
 module Reflection.Param.Env where
 
 open import Data.Nat using (ℕ; zero; suc; _+_; _∸_; _*_)
@@ -9,14 +9,17 @@ open import Data.List using (List; map; _++_; replicate)
 open import Function
 open import Relation.Nullary
 open import Data.Nat.Param.Binary
+open import Agda.Builtin.Reflection using (Visibility; Pattern; Name) renaming (con to conPat)
+open import Agda.Builtin.Reflection using (Term) renaming (con to conTerm)
+open import Reflection.AST.Name using () renaming (_≟_ to _≟-Name_)
 
-open import Reflection.NP
+open import Reflection.NP hiding (_≟-Name_)
 
 -- Local "imports" to avoid depending on nplib
 private
   postulate
-    opaque : ∀ {a b} {A : Set a} {B : Set b} → A → B → B
-    -- opaque-rule : ∀ {x} y → opaque x y ≡ y
+    hide : ∀ {a b} {A : Set a} {B : Set b} → A → B → B
+    -- hide-rule : ∀ {x} y → hide x y ≡ y
 
 record Env (w : ℕ)(A B : Set) : Set where
   field
@@ -30,14 +33,20 @@ open Env public
 Env' = λ w → Env w ℕ ℕ
 
 ε-pVarᵢ : ∀ {w} → String → Fin w → ℕ → ℕ
-ε-pVarᵢ = λ s i → opaque (s ++ˢ ".pVarᵢ " ++ˢ showNat (Fin▹ℕ i))
+ε-pVarᵢ = λ s i → hide (s ++ˢ ".pVarᵢ " ++ˢ showNat (Fin▹ℕ i))
+
+ε-pConP : Name → Pats → Pattern
+ε-pConP c ps = hide "ε.pConP" (conPat c ps)
+
+ε-pConT : Name → Args Term → Term
+ε-pConT c args = hide "ε.pConT" (conTerm c args)
 
 ε : ∀ w → Env' w
 ε w = record { pVarᵢ = λ i n → 100000 + (1000 * Fin▹ℕ i) + n -- ε-pVarᵢ "ε"
-             ; pVarᵣ = _+_ 200000 -- opaque "ε.pVarᵣ"
-             ; pConP = opaque "ε.pConP" con
-             ; pConT = opaque "ε.pConT" con
-             ; pDef = opaque "ε.pDef" }
+             ; pVarᵣ = _+_ 200000 -- hide "ε.pVarᵣ"
+             ; pConP = ε-pConP
+             ; pConT = ε-pConT
+             ; pDef = hide "ε.pDef" }
 
 extDefEnv : ((Name → Name) → (Name → Name)) → ∀ {w A B} → Env w A B → Env w A B
 extDefEnv ext Γ = record Γ { pDef = ext (pDef Γ) }
@@ -58,11 +67,11 @@ extConEnv ext Γ = record Γ { pCon = ext (pCon Γ) }
 
 liftConT : (Name → Name) → Name → Args Term → Term
 liftConP : (Name → Name) → Name → Pats → Pattern
-liftConT f = con ∘ f
-liftConP f = con ∘ f
+liftConT f = conTerm ∘ f
+liftConP f = conPat ∘ f
 
 conSkip : List Visibility → Name → Args Term → Term
-conSkip vs c args = con c (map (λ v → argʳ v unknown) vs ++ args)
+conSkip vs c args = conTerm c (map (λ v → argʳ v unknown) vs ++ args)
 
 conSkip' : ℕ → Name → Args Term → Term
 conSkip' k = conSkip (replicate k hidden)
@@ -103,12 +112,12 @@ module _ {w} (Γ : Env' w) where
 
 ⟦ℕ⟧-env = record (ε 2)
                { pDef  = [ quote ℕ ≔ quote ⟦ℕ⟧ ] id
-               ; pConP = [ quote zero ≔ con (quote ⟦zero⟧) ]
-                        ([ quote suc  ≔ con (quote ⟦suc⟧)  ]
-                         con)
-               ; pConT = [ quote zero ≔ con (quote ⟦zero⟧) ]
-                        ([ quote zero ≔ con (quote ⟦zero⟧) ]
-                         con)
+               ; pConP = [ quote zero ≔ conPat (quote ⟦zero⟧) ]
+                        ([ quote suc  ≔ conPat (quote ⟦suc⟧)  ]
+                         conPat)
+               ; pConT = [ quote zero ≔ conTerm (quote ⟦zero⟧) ]
+                        ([ quote zero ≔ conTerm (quote ⟦zero⟧) ]
+                         conTerm)
                }
 
 {-

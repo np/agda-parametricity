@@ -22,6 +22,8 @@ open import Data.Nat.Param.Binary
 open import Reflection.NP
 open import Reflection.Param
 open import Reflection.Param.Env
+open import Agda.Builtin.Reflection using (Pattern) renaming (con to conPat)
+open import Agda.Builtin.Reflection using (Term) renaming (con to conTerm)
 
 module Reflection.Param.Tests where
 
@@ -31,8 +33,8 @@ module Reflection.Param.Tests where
 -- Local "imports" to avoid depending on nplib
 private
   postulate
-    opaque : ∀ {a b} {A : Set a} {B : Set b} → A → B → B
-    -- opaque-rule : ∀ {x} y → opaque x y ≡ y
+    hide : ∀ {a b} {A : Set a} {B : Set b} → A → B → B
+    -- hide-rule : ∀ {x} y → hide x y ≡ y
 
   ★₀ = Set₀
   ★₁ = Set₁
@@ -170,7 +172,7 @@ defDefEnv1 (quote ★₀)     = quote [Set₀]
 defDefEnv1 (quote ★₁)     = quote [Set₁]
 defDefEnv1 (quote False)  = quote [False]
 defDefEnv1 (quote Level)  = quote [Level]
-defDefEnv1 n              = opaque "defDefEnv1" n
+defDefEnv1 n              = hide "defDefEnv1" n
 
 defConEnv1 : Name → Name
 defConEnv1 (quote 0₂)         = quote [0₂]
@@ -179,7 +181,7 @@ defConEnv1 (quote ℕ.zero)     = quote [zero]
 defConEnv1 (quote ℕ.suc)      = quote [suc]
 defConEnv1 (quote Level.zero) = quote 0₁
 defConEnv1 (quote Level.suc)  = quote 0₁
-defConEnv1 n                  = opaque "defConEnv1" n
+defConEnv1 n                  = hide "defConEnv1" n
 
 defDefEnv2 : Name → Name
 defDefEnv2 (quote 𝟚)      = quote ⟦𝟚⟧
@@ -189,7 +191,7 @@ defDefEnv2 (quote ★₁)     = quote ⟦Set₁⟧
 defDefEnv2 (quote String) = quote ⟦String⟧
 defDefEnv2 (quote Float)  = quote ⟦Float⟧
 defDefEnv2 (quote Level)  = quote ⟦Level⟧
-defDefEnv2 n              = opaque "defDefEnv" n
+defDefEnv2 n              = hide "defDefEnv" n
 
 defConEnv2 : Name → Name
 defConEnv2 (quote 0₂)         = quote ⟦0₂⟧
@@ -198,24 +200,24 @@ defConEnv2 (quote ℕ.zero)     = quote ⟦ℕ⟧.⟦zero⟧
 defConEnv2 (quote ℕ.suc)      = quote ⟦ℕ⟧.⟦suc⟧
 defConEnv2 (quote Level.zero) = quote 0₁
 defConEnv2 (quote Level.suc)  = quote 0₁
-defConEnv2 n                  = opaque "defConEnv2" n
+defConEnv2 n                  = hide "defConEnv2" n
 
 defEnv0 : Env' 0
 defEnv0 = record (ε 0)
-                 { pConT = con
-                 ; pConP = con
+                 { pConT = conTerm
+                 ; pConP = conPat
                  ; pDef  = id }
 
 defEnv1 : Env' 1
 defEnv1 = record (ε 1)
-  { pConP = con ∘′ defConEnv1
-  ; pConT = con ∘′ defConEnv1
+  { pConP = conPat ∘′ defConEnv1
+  ; pConT = conTerm ∘′ defConEnv1
   ; pDef = defDefEnv1 }
 
 defEnv2 : Env' 2
 defEnv2 = record (ε 2)
-  { pConP = con ∘′ defConEnv2
-  ; pConT = con ∘′ defConEnv2
+  { pConP = conPat ∘′ defConEnv2
+  ; pConT = conTerm ∘′ defConEnv2
   ; pDef = defDefEnv2 }
 
 param1-[False]-type = param-type-by-name defEnv1 (quote [False])
@@ -237,8 +239,8 @@ module Const where
 
   wrapperEnv = record (ε 2)
    { pDef = [ quote Wrapper       ≔ quote ⟦Wrapper⟧  ] id
-   ; pConP = [ quote Wrapper.wrap ≔ con (quote ⟦Wrapper⟧.⟦wrap⟧) ] con
-   ; pConT = [ quote Wrapper.wrap ≔ con (quote ⟦Wrapper⟧.⟦wrap⟧) ] con
+   ; pConP = [ quote Wrapper.wrap ≔ conPat (quote ⟦Wrapper⟧.⟦wrap⟧) ] conPat
+   ; pConT = [ quote Wrapper.wrap ≔ conTerm (quote ⟦Wrapper⟧.⟦wrap⟧) ] conTerm
    }
 
   unquoteDecl ⟦idWrapper⟧ = param-rec-def-by-name wrapperEnv (quote idWrapper) ⟦idWrapper⟧
@@ -262,8 +264,8 @@ module Param where
   {-
   [Wrapper]-env = record (ε 1)
     { pDef = [ quote Wrapper ≔ quote [Wrapper] ] id
-    ; pConP = [ quote wrap ≔ con (quote [wrap])  ] con
-    ; pConT = [ quote wrap ≔ conSkip' (quote [wrap]) ] con
+    ; pConP = [ quote wrap ≔ conPat (quote [wrap])  ] conPat
+    ; pConT = [ quote wrap ≔ conSkip' (quote [wrap]) ] conTerm
     }
 
   unquoteDecl [idWrapper] =
@@ -292,8 +294,8 @@ data ⟦Wrapper⟧ {A₀ A₁ : Set} (Aᵣ : A₀ → A₁ → Set₀)
 
 ⟦Wrapper⟧-env = record (ε 2)
   { pDef = [ quote Wrapper ≔ quote ⟦Wrapper⟧ ] id
-  ; pConP = [ quote wrap ≔ con (quote ⟦wrap⟧)  ] con
-  ; pConT = [ quote wrap ≔ conSkip' 3 (quote ⟦wrap⟧) ] con
+  ; pConP = [ quote wrap ≔ conPat (quote ⟦wrap⟧)  ] conPat
+  ; pConT = [ quote wrap ≔ conSkip' 3 (quote ⟦wrap⟧) ] conTerm
   }
 
 ⟦idWrapper⟧1 : (∀⟨ A ∶ ⟦Set₀⟧ ⟩⟦→⟧ ⟦Wrapper⟧ A ⟦→⟧ ⟦Wrapper⟧ A) idWrapper idWrapper
@@ -341,8 +343,8 @@ data [Bot] {A : Set} (Aₚ : A → Set₀)
 
 [Bot]-env = record (ε 1)
   { pDef = [ quote Bot ≔ quote [Bot] ] id
-  ; pConP = [ quote bot ≔ con (quote [bot])  ] con
-  ; pConT = [ quote bot ≔ conSkip' 2 (quote [bot]) ] con
+  ; pConP = [ quote bot ≔ conPat (quote [bot])  ] conPat
+  ; pConT = [ quote bot ≔ conSkip' 2 (quote [bot]) ] conTerm
   }
 
 [gobot]' : (∀⟨ A ∶ [Set₀] ⟩[→] [Bot] A [→] A) gobot
@@ -382,8 +384,8 @@ data ⟦Bot⟧ {A₀ A₁ : Set} (Aᵣ : A₀ → A₁ → Set₀)
 
 ⟦Bot⟧-env = record (ε 2)
   { pDef = [ quote Bot ≔ quote ⟦Bot⟧ ] id
-  ; pConP = [ quote bot ≔ con (quote ⟦bot⟧)  ] con
-  ; pConT = [ quote bot ≔ conSkip' 3 (quote ⟦bot⟧) ] con
+  ; pConP = [ quote bot ≔ conPat (quote ⟦bot⟧)  ] conPat
+  ; pConT = [ quote bot ≔ conSkip' 3 (quote ⟦bot⟧) ] conTerm
   }
 
 ⟦gobot⟧1 : (∀⟨ A ∶ ⟦Set₀⟧ ⟩⟦→⟧ ⟦Bot⟧ A ⟦→⟧ A) gobot gobot
@@ -426,12 +428,12 @@ con⟦List₀⟧ = dropArgs 3 ∘ conSkip' 3
 
 ⟦List₀⟧-env = record (ε 2)
   { pDef = [ quote List₀ ≔ quote ⟦List₀⟧ ] id
-  ; pConP = [ quote List₀.[]  ≔ con (quote ⟦List₀⟧.⟦[]⟧)  ]
-           ([ quote List₀._∷_ ≔ con (quote ⟦List₀⟧._⟦∷⟧_) ]
-            con)
+  ; pConP = [ quote List₀.[]  ≔ conPat (quote ⟦List₀⟧.⟦[]⟧)  ]
+           ([ quote List₀._∷_ ≔ conPat (quote ⟦List₀⟧._⟦∷⟧_) ]
+            conPat)
   ; pConT = [ quote List₀.[]  ≔ con⟦List₀⟧ (quote ⟦List₀⟧.⟦[]⟧)  ]
            ([ quote List₀._∷_ ≔ con⟦List₀⟧ (quote ⟦List₀⟧._⟦∷⟧_) ]
-            con)
+            conTerm)
   }
 
 ⟦idList₀⟧' : (∀⟨ A ∶ ⟦Set₀⟧ ⟩⟦→⟧ ⟦List₀⟧ A ⟦→⟧ ⟦List₀⟧ A) idList₀ idList₀

@@ -1,7 +1,7 @@
 {-# OPTIONS --without-K #-}
 open import Level
 open import Type.Param.Binary
-open import Algebra.FunctionProperties
+open import Algebra.Core using (Op₁; Op₂)
 
 module Function.Param.Binary where
 

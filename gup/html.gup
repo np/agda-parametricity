@@ -1,2 +1,0 @@
-#!/bin/bash -eu
-exec agda-pkg -cagda-pkg.conf +RTS -M2G -RTS --html agda-parametricity.agda
